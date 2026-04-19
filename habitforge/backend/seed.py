@@ -1,0 +1,108 @@
+"""Seed DB with 4 sample habits + 60 days of realistic completions."""
+from __future__ import annotations
+
+import asyncio
+import random
+from datetime import date, datetime, timedelta, timezone
+
+from sqlalchemy import delete
+
+from app.database import SessionLocal, init_db
+from app.models import Completion, CompletionStatus, FrequencyType, Habit
+
+random.seed(42)
+
+SAMPLES = [
+    dict(
+        name="Drink Water",
+        description="8 glasses per day",
+        icon="💧",
+        color="#06b6d4",
+        frequency_type=FrequencyType.daily,
+        target_per_week=7,
+        active_days=[],
+        sort_order=0,
+        consistency=0.85,
+    ),
+    dict(
+        name="Read 20 minutes",
+        description="Non-fiction or novel",
+        icon="📚",
+        color="#6366f1",
+        frequency_type=FrequencyType.daily,
+        target_per_week=7,
+        active_days=[],
+        sort_order=1,
+        consistency=0.7,
+    ),
+    dict(
+        name="Workout",
+        description="Gym or home session",
+        icon="🏋️",
+        color="#ef4444",
+        frequency_type=FrequencyType.weekly,
+        target_per_week=3,
+        active_days=[],
+        sort_order=2,
+        consistency=0.75,
+    ),
+    dict(
+        name="Journal",
+        description="Evening reflection",
+        icon="📝",
+        color="#22c55e",
+        frequency_type=FrequencyType.custom_days,
+        target_per_week=5,
+        active_days=[0, 1, 2, 3, 4],  # weekdays
+        sort_order=3,
+        consistency=0.8,
+    ),
+]
+
+
+async def main() -> None:
+    await init_db()
+    async with SessionLocal() as session:
+        await session.execute(delete(Completion))
+        await session.execute(delete(Habit))
+        await session.commit()
+
+        today = date.today()
+
+        for cfg in SAMPLES:
+            consistency = cfg.pop("consistency")
+            h = Habit(
+                created_at=datetime.now(timezone.utc) - timedelta(days=60),
+                **cfg,
+            )
+            session.add(h)
+            await session.flush()
+
+            for i in range(60, -1, -1):
+                day = today - timedelta(days=i)
+                # frequency-aware due check
+                if h.frequency_type == FrequencyType.custom_days:
+                    if day.weekday() not in h.active_days:
+                        continue
+                if random.random() < consistency:
+                    status = (
+                        CompletionStatus.skipped
+                        if random.random() < 0.05
+                        else CompletionStatus.done
+                    )
+                    note = None
+                    if random.random() < 0.08:
+                        note = random.choice(
+                            ["felt great", "quick session", "low energy", "nailed it"]
+                        )
+                    session.add(
+                        Completion(
+                            habit_id=h.id, date=day, status=status, note=note
+                        )
+                    )
+        await session.commit()
+        print("Seeded 4 habits with ~60 days of completions.")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

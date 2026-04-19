@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import fastapi, sqlalchemy, pytest\")",
+      "Bash(pip install *)",
+      "Bash(python -m pytest tests/test_streaks.py -v)",
+      "Bash(python -m pytest tests/ -v)",
+      "Bash(python -m pytest tests/test_habits_api.py -v)",
+      "Bash(rm -f habitforge.db)",
+      "Bash(python seed.py)",
+      "Bash(python -m uvicorn app.main:app --port 8000 --log-level warning)",
+      "Bash(curl -s http://localhost:8000/api/health)",
+      "Bash(curl -s http://localhost:8000/api/habits)",
+      "Bash(python -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\(f'{len\\(d\\)} habits'\\); print\\(d[0]['name'], 'streak=', d[0]['currentStreak']\\)\")",
+      "Bash(curl -s -o /dev/null -w \"docs: %{http_code}\\\\n\" http://localhost:8000/docs pkill -f \"uvicorn app.main\")"
+    ]
+  }
+}

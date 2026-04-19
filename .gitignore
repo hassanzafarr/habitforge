@@ -1,0 +1,57 @@
+# ─── Python / Backend ───────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.log
+
+# Database files (do NOT commit the local dev DB)
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# ─── Node / Frontend ────────────────────────────────────────────────
+node_modules/
+dist/
+dist-ssr/
+*.local
+.cache/
+.parcel-cache/
+.turbo/
+tsconfig.tsbuildinfo
+
+# ─── Editors & OS ───────────────────────────────────────────────────
+.vscode/settings.json
+.vscode/launch.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+desktop.ini
