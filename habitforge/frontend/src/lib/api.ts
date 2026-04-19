@@ -6,6 +6,9 @@ import type {
   HabitCreate,
   HabitUpdate,
   HeatmapCell,
+  Todo,
+  TodoCreate,
+  TodoUpdate,
 } from "./types";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -59,6 +62,16 @@ export const api = {
   heatmap: (from: string, to: string) =>
     req<HeatmapCell[]>(`/completions/heatmap?from=${from}&to=${to}`),
   summary: () => req<DashboardSummary>(`/dashboard/summary`),
+
+  // ── Todos ──────────────────────────────────────────────────────────────
+  listTodos: (includeCompleted = true) =>
+    req<Todo[]>(`/todos${includeCompleted ? "" : "?include_completed=false"}`),
+  createTodo: (body: TodoCreate) =>
+    req<Todo>("/todos", { method: "POST", body: JSON.stringify(body) }),
+  updateTodo: (id: number, body: TodoUpdate) =>
+    req<Todo>(`/todos/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteTodo: (id: number) =>
+    req<void>(`/todos/${id}`, { method: "DELETE" }),
 };
 
 export const qk = {
@@ -68,4 +81,5 @@ export const qk = {
     ["completions", id, from, to] as const,
   heatmap: (from: string, to: string) => ["heatmap", from, to] as const,
   summary: () => ["summary"] as const,
+  todos: (includeCompleted = true) => ["todos", { includeCompleted }] as const,
 };

@@ -5,7 +5,7 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models import CompletionStatus, FrequencyType
+from app.models import CompletionStatus, FrequencyType, TodoPriority
 
 
 def _camel(s: str) -> str:
@@ -94,3 +94,31 @@ class DashboardSummary(CamelModel):
     overall_longest_streak: int
     weekly_completion_rate: float
     last_30_days_trend: list[TrendPoint]
+
+
+# ── Todos ────────────────────────────────────────────────────────────────────
+
+class TodoBase(CamelModel):
+    title: str = Field(min_length=1, max_length=120)
+    description: Optional[str] = Field(default=None, max_length=500)
+    priority: TodoPriority = TodoPriority.medium
+    due_date: Optional[date] = None
+
+
+class TodoCreate(TodoBase):
+    pass
+
+
+class TodoUpdate(CamelModel):
+    title: Optional[str] = Field(default=None, min_length=1, max_length=120)
+    description: Optional[str] = Field(default=None, max_length=500)
+    priority: Optional[TodoPriority] = None
+    due_date: Optional[date] = None
+    completed: Optional[bool] = None
+
+
+class TodoRead(TodoBase):
+    id: int
+    completed: bool
+    created_at: datetime
+    completed_at: Optional[datetime] = None

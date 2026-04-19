@@ -22,16 +22,17 @@ export function DashboardPage() {
   const today = format(new Date(), "EEEE, MMMM d");
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 space-y-8">
+    <div className="mx-auto max-w-6xl px-4 py-6 md:py-8 space-y-6 md:space-y-8">
       {/* Header row */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-ink dark:text-white">
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-ink dark:text-white">
             Dashboard
           </h1>
           <p className="text-sm text-muted mt-0.5">{today}</p>
         </div>
-        <Button onClick={() => setShowCreate(true)} size="md">
+        {/* Only shown on desktop — mobile uses FAB in bottom nav */}
+        <Button onClick={() => setShowCreate(true)} size="md" className="hidden md:flex">
           <Plus size={15} />
           New Habit
           <span className="hidden sm:inline ml-1 text-xs opacity-60 font-mono">N</span>
@@ -41,16 +42,16 @@ export function DashboardPage() {
       {/* Stat cards */}
       <StatCards />
 
-      {/* Today + heatmap/trend */}
-      <div className="grid gap-6 lg:grid-cols-[1fr_auto]">
+      {/* Today + trend: stacked on mobile, side-by-side on large screens */}
+      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         {/* Today's habits */}
         <div>
           <h2 className="mb-3 text-sm font-semibold text-ink dark:text-white">Today's Habits</h2>
           <TodayHabitList />
         </div>
 
-        {/* Right column: heatmap + trend */}
-        <div className="flex flex-col gap-6 lg:w-[340px]">
+        {/* Right column: trend chart */}
+        <div className="flex flex-col gap-6">
           <TrendChart />
         </div>
       </div>

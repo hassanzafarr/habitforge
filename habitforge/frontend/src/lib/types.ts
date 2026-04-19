@@ -60,3 +60,25 @@ export interface HabitCreate {
 }
 
 export type HabitUpdate = Partial<HabitCreate> & { sortOrder?: number };
+
+export type TodoPriority = "low" | "medium" | "high";
+
+export interface Todo {
+  id: number;
+  title: string;
+  description: string | null;
+  priority: TodoPriority;
+  dueDate: string | null;
+  completed: boolean;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export interface TodoCreate {
+  title: string;
+  description?: string | null;
+  priority?: TodoPriority;
+  dueDate?: string | null;
+}
+
+export type TodoUpdate = Partial<TodoCreate> & { completed?: boolean };

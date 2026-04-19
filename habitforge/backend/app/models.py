@@ -6,6 +6,7 @@ from typing import Optional
 
 from sqlalchemy import (
     JSON,
+    Boolean,
     Date,
     DateTime,
     Enum,
@@ -75,3 +76,24 @@ class Completion(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow, nullable=False)
 
     habit: Mapped[Habit] = relationship(back_populates="completions")
+
+
+class TodoPriority(str, enum.Enum):
+    low = "low"
+    medium = "medium"
+    high = "high"
+
+
+class Todo(Base):
+    __tablename__ = "todos"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    title: Mapped[str] = mapped_column(String(120), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(String(500), default=None)
+    completed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    priority: Mapped[TodoPriority] = mapped_column(
+        Enum(TodoPriority), default=TodoPriority.medium, nullable=False
+    )
+    due_date: Mapped[Optional[date]] = mapped_column(Date, default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow, nullable=False)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=None)

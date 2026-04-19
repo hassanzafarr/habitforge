@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, ListChecks, Sun, Moon } from "lucide-react";
+import { LayoutDashboard, ListChecks, CheckSquare, Sun, Moon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
@@ -27,7 +27,7 @@ function ThemeToggle() {
     <button
       onClick={toggle}
       aria-label="Toggle dark mode"
-      className="flex h-8 w-8 items-center justify-center rounded-md text-muted hover:bg-neutral-100 hover:text-ink dark:hover:bg-neutral-800 dark:hover:text-neutral-100 transition-colors"
+      className="flex h-9 w-9 items-center justify-center rounded-md text-muted hover:bg-neutral-100 hover:text-ink dark:hover:bg-neutral-800 dark:hover:text-neutral-100 transition-colors"
     >
       {isDark ? <Sun size={16} /> : <Moon size={16} />}
     </button>
@@ -37,6 +37,7 @@ function ThemeToggle() {
 const LINKS = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/habits", label: "Habits", icon: ListChecks },
+  { to: "/todos", label: "To-Do", icon: CheckSquare },
 ];
 
 export function Navbar() {
@@ -45,12 +46,12 @@ export function Navbar() {
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4">
         {/* Logo */}
         <NavLink to="/" className="flex items-center gap-2 font-semibold tracking-tight text-ink dark:text-white">
-          <img src="/logos/mainlogo.png" alt="HabitForge" className="w-7 h-7 rounded-md object-cover" />
+          <img src="/logos/mainlogo.png" alt="HabitForge" className="w-9 h-9 rounded-md object-cover" />
           <span className="text-[15px]">HabitForge</span>
         </NavLink>
 
-        {/* Nav links */}
-        <nav className="flex items-center gap-1">
+        {/* Desktop nav links — hidden on mobile */}
+        <nav className="hidden md:flex items-center gap-1">
           {LINKS.map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}

@@ -28,25 +28,28 @@ export function HabitsPage() {
   const archived = habits?.filter((h) => !!h.archivedAt) ?? [];
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 space-y-6">
+    <div className="mx-auto max-w-4xl px-4 py-6 md:py-8 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-ink dark:text-white">Habits</h1>
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-ink dark:text-white">Habits</h1>
           <p className="text-sm text-muted mt-0.5">Manage your daily practices</p>
         </div>
-        <Button onClick={() => setShowCreate(true)}>
+        {/* Hidden on mobile — FAB in bottom nav handles creation */}
+        <Button onClick={() => setShowCreate(true)} className="hidden md:flex">
           <Plus size={15} />
           New Habit
         </Button>
       </div>
 
-      {/* Keyboard hint */}
-      <p className="text-xs text-muted">
+      {/* Keyboard hint — desktop only */}
+      <p className="hidden md:block text-xs text-muted">
         Press{" "}
         <kbd className="px-1.5 py-0.5 rounded border border-border text-xs dark:border-neutral-700">N</kbd>{" "}
         to create · Click a habit to view details
       </p>
+      {/* Mobile hint */}
+      <p className="md:hidden text-xs text-muted">Tap a habit to view details</p>
 
       {/* Active habits */}
       {isLoading ? (

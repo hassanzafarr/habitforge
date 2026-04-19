@@ -69,7 +69,7 @@ export function HabitDetailPage() {
   const isArchived = !!habit.archivedAt;
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 space-y-6">
+    <div className="mx-auto max-w-4xl px-4 py-6 md:py-8 space-y-5 md:space-y-6">
       {/* Back */}
       <button
         onClick={() => navigate(-1)}
@@ -78,57 +78,60 @@ export function HabitDetailPage() {
         <ArrowLeft size={14} /> Back
       </button>
 
-      {/* Hero header */}
+      {/* Hero header — stack on mobile, row on sm+ */}
       <div
-        className="rounded-2xl p-6 flex items-start gap-4"
+        className="rounded-2xl p-4 md:p-6 flex flex-col sm:flex-row items-start gap-4"
         style={{ backgroundColor: rgbaFromHex(habit.color, 0.08) }}
       >
         <div
-          className="flex h-16 w-16 items-center justify-center rounded-2xl text-3xl shrink-0"
+          className="flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-2xl text-3xl shrink-0"
           style={{ backgroundColor: rgbaFromHex(habit.color, 0.18) }}
         >
           {habit.icon}
         </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-bold tracking-tight text-ink dark:text-white">
-            {habit.name}
-          </h1>
-          {habit.description && (
-            <p className="text-sm text-muted mt-0.5">{habit.description}</p>
-          )}
-          {isArchived && (
-            <span className="inline-block mt-1 text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full dark:bg-amber-900/20">
-              Archived
-            </span>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="flex gap-2">
-          {!isArchived && (
-            <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>
-              <Pencil size={13} /> Edit
-            </Button>
-          )}
-          {isArchived ? (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => restoreMut.mutate()}
-              disabled={restoreMut.isPending}
-            >
-              <RotateCcw size={13} /> Restore
-            </Button>
-          ) : (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => archiveMut.mutate()}
-              disabled={archiveMut.isPending}
-            >
-              <Archive size={13} /> Archive
-            </Button>
-          )}
+        <div className="flex-1 min-w-0 w-full">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <h1 className="text-lg md:text-xl font-bold tracking-tight text-ink dark:text-white">
+                {habit.name}
+              </h1>
+              {habit.description && (
+                <p className="text-sm text-muted mt-0.5">{habit.description}</p>
+              )}
+              {isArchived && (
+                <span className="inline-block mt-1 text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full dark:bg-amber-900/20">
+                  Archived
+                </span>
+              )}
+            </div>
+            {/* Actions */}
+            <div className="flex gap-2 shrink-0">
+              {!isArchived && (
+                <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>
+                  <Pencil size={13} /> Edit
+                </Button>
+              )}
+              {isArchived ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => restoreMut.mutate()}
+                  disabled={restoreMut.isPending}
+                >
+                  <RotateCcw size={13} /> Restore
+                </Button>
+              ) : (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => archiveMut.mutate()}
+                  disabled={archiveMut.isPending}
+                >
+                  <Archive size={13} /> Archive
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 

@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
-from app.routers import completions, habits
+from app.routers import completions, habits, todos
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("habitforge")
@@ -40,6 +40,7 @@ async def log_requests(request, call_next):
 
 app.include_router(habits.router, prefix="/api")
 app.include_router(completions.router, prefix="/api")
+app.include_router(todos.router, prefix="/api")
 
 
 @app.get("/api/health")

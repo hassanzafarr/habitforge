@@ -12,6 +12,11 @@ from sqlalchemy.orm import DeclarativeBase
 
 DATABASE_URL = os.getenv("HABITFORGE_DB_URL", "sqlite+aiosqlite:///./habitforge.db")
 
+# Railway provides 'postgresql://' but SQLAlchemy async needs 'postgresql+asyncpg://'
+if DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+
 engine = create_async_engine(DATABASE_URL, echo=False, future=True)
 SessionLocal = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 

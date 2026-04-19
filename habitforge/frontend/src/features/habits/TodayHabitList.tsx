@@ -25,7 +25,7 @@ function CheckCircle({ done, color, onClick }: CheckCircleProps) {
       onClick={onClick}
       aria-label={done ? "Mark undone" : "Mark done"}
       whileTap={{ scale: 0.85 }}
-      className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+      className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
       style={{
         borderColor: done ? color : "#d6d3d1",
         backgroundColor: done ? color : "transparent",
@@ -69,7 +69,7 @@ function HabitRow({ habit, done, index, onToggle }: HabitRowProps) {
   return (
     <motion.div
       layout
-      className="flex items-center gap-4 rounded-xl border border-border bg-white px-4 py-3 dark:bg-neutral-900 dark:border-neutral-800"
+      className="flex items-center gap-3 md:gap-4 rounded-xl border border-border bg-white px-3 md:px-4 py-3 dark:bg-neutral-900 dark:border-neutral-800"
       animate={{ opacity: done ? 0.65 : 1 }}
     >
       <CheckCircle done={done} color={habit.color} onClick={onToggle} />
