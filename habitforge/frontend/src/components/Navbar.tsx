@@ -45,7 +45,7 @@ export function Navbar() {
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4">
         {/* Logo */}
         <NavLink to="/" className="flex items-center gap-2 font-semibold tracking-tight text-ink dark:text-white">
-          <img src="/logos/minimal.png" alt="HabitForge" className="w-7 h-7 rounded-md object-cover" />
+          <img src="/logos/mainlogo.png" alt="HabitForge" className="w-7 h-7 rounded-md object-cover" />
           <span className="text-[15px]">HabitForge</span>
         </NavLink>
 
