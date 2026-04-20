@@ -32,6 +32,18 @@ def _vapid_config() -> tuple[str | None, str | None, str]:
     )
 
 
+def _normalize_vapid_subject(subject: str) -> str:
+    s = (subject or "").strip()
+    if not s:
+        return ""
+    if s.startswith("mailto:") or s.startswith("https://"):
+        return s
+    # Common mistake: plain email provided without mailto:
+    if "@" in s and " " not in s and ":" not in s:
+        return f"mailto:{s}"
+    return s
+
+
 def _vapid_ready() -> bool:
     public_key, private_key, _subject = _vapid_config()
     return bool(public_key and private_key)
@@ -118,6 +130,12 @@ async def send_test_notification(
             status_code=400,
             detail="VAPID keys are not configured. Set HABITFORGE_VAPID_PUBLIC_KEY and HABITFORGE_VAPID_PRIVATE_KEY.",
         )
+    subject = _normalize_vapid_subject(subject)
+    if not (subject.startswith("mailto:") or subject.startswith("https://")):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid HABITFORGE_VAPID_SUBJECT. Use mailto:you@example.com or https://your-domain.com.",
+        )
 
     res = await session.execute(select(PushSubscription))
     subs = res.scalars().all()
@@ -148,6 +166,9 @@ async def send_test_notification(
                 removed += 1
             else:
                 log.warning("Push send failed for endpoint %s: %s", sub.endpoint, exc)
+        except Exception as exc:
+            log.exception("Push send failed due to invalid VAPID config or unexpected error.")
+            raise HTTPException(status_code=400, detail=f"Push send failed: {exc}") from exc
 
     for sub in expired:
         await session.delete(sub)
