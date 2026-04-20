@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -106,7 +106,7 @@ async def update_habit(
 @router.delete("/{habit_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def archive_habit(habit_id: int, session: Session) -> None:
     h = await _get_or_404(session, habit_id)
-    h.archived_at = datetime.now(timezone.utc)
+    h.archived_at = datetime.utcnow()
     await session.commit()
 
 
