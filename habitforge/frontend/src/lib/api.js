@@ -36,6 +36,21 @@ export const api = {
     createTodo: (body) => req("/todos", { method: "POST", body: JSON.stringify(body) }),
     updateTodo: (id, body) => req(`/todos/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
     deleteTodo: (id) => req(`/todos/${id}`, { method: "DELETE" }),
+    // ── Notes ──────────────────────────────────────────────────────────────
+    listNotes: (params) => {
+        const qs = new URLSearchParams();
+        if (params?.q)
+            qs.set("q", params.q);
+        if (params?.tag)
+            qs.set("tag", params.tag);
+        if (params?.habitId != null)
+            qs.set("habit_id", String(params.habitId));
+        const query = qs.toString();
+        return req(`/notes${query ? `?${query}` : ""}`);
+    },
+    createNote: (body) => req("/notes", { method: "POST", body: JSON.stringify(body) }),
+    updateNote: (id, body) => req(`/notes/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+    deleteNote: (id) => req(`/notes/${id}`, { method: "DELETE" }),
     // Push notifications
     pushStatus: () => req("/push/status"),
     pushPublicKey: () => req("/push/public-key"),
@@ -53,5 +68,6 @@ export const qk = {
     heatmap: (from, to) => ["heatmap", from, to],
     summary: () => ["summary"],
     todos: (includeCompleted = true) => ["todos", { includeCompleted }],
+    notes: (params) => ["notes", params ?? {}],
     pushStatus: () => ["push-status"],
 };

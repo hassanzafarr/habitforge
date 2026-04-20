@@ -38,10 +38,7 @@ export function PushNotificationsCard() {
     const hasServiceWorker = useMemo(() => typeof window !== "undefined" && "serviceWorker" in navigator, []);
     const hasPushManager = useMemo(() => typeof window !== "undefined" && "PushManager" in window, []);
     const hasNotificationApi = useMemo(() => typeof window !== "undefined" && "Notification" in window, []);
-    const supported = useMemo(() => typeof window !== "undefined" &&
-        hasServiceWorker &&
-        hasPushManager &&
-        hasNotificationApi, [hasNotificationApi, hasPushManager, hasServiceWorker]);
+    const supported = useMemo(() => typeof window !== "undefined" && hasServiceWorker && hasPushManager && hasNotificationApi, [hasNotificationApi, hasPushManager, hasServiceWorker]);
     const isStandalone = useMemo(() => typeof window !== "undefined" &&
         (window.matchMedia?.("(display-mode: standalone)")?.matches ||
             navigator.standalone === true), []);

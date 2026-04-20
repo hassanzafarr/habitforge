@@ -1,6 +1,6 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, ListChecks, CheckSquare, Sun, Moon } from "lucide-react";
+import { LayoutDashboard, ListChecks, CheckSquare, NotebookPen, Sun, Moon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 function ThemeToggle() {
@@ -23,6 +23,7 @@ const LINKS = [
     { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
     { to: "/habits", label: "Habits", icon: ListChecks },
     { to: "/todos", label: "To-Do", icon: CheckSquare },
+    { to: "/notes", label: "Notes", icon: NotebookPen },
 ];
 export function Navbar() {
     return (_jsx("header", { className: "sticky top-0 z-30 border-b border-border bg-white/90 backdrop-blur-sm dark:bg-neutral-950/90 dark:border-neutral-800", children: _jsxs("div", { className: "mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4", children: [_jsxs(NavLink, { to: "/", className: "flex items-center gap-2 font-semibold tracking-tight text-ink dark:text-white", children: [_jsx("img", { src: "/logos/mainlogo.png", alt: "HabitForge", className: "w-9 h-9 rounded-md object-cover" }), _jsx("span", { className: "text-[15px]", children: "HabitForge" })] }), _jsx("nav", { className: "hidden md:flex items-center gap-1", children: LINKS.map(({ to, label, icon: Icon, end }) => (_jsxs(NavLink, { to: to, end: end, className: ({ isActive }) => cn("flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors", isActive

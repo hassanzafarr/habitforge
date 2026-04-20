@@ -1,4 +1,4 @@
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-runtime";
 /**
  * Today's check-off list with optimistic updates and animated check circles.
  * Pressing 1-9 toggles the Nth habit via keyboard shortcut.
@@ -10,16 +10,22 @@ import { toast } from "sonner";
 import { api, qk } from "@/lib/api";
 import { todayIso } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/Skeleton";
-function CheckCircle({ done, color, onClick }) {
-    return (_jsx(motion.button, { onClick: onClick, "aria-label": done ? "Mark undone" : "Mark done", whileTap: { scale: 0.85 }, className: "relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2", style: {
-            borderColor: done ? color : "#d6d3d1",
-            backgroundColor: done ? color : "transparent",
-        }, children: _jsx(AnimatePresence, { children: done && (_jsx(motion.svg, { initial: { scale: 0, opacity: 0 }, animate: { scale: 1, opacity: 1 }, exit: { scale: 0, opacity: 0 }, transition: { type: "spring", stiffness: 400, damping: 25 }, width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "white", strokeWidth: "2.5", strokeLinecap: "round", strokeLinejoin: "round", children: _jsx("polyline", { points: "20 6 9 17 4 12" }) }, "check")) }) }));
+function CheckCircle({ done, color, onClick, isNegative }) {
+    const borderColor = isNegative
+        ? done ? "#ef4444" : "#22c55e"
+        : done ? color : "#d6d3d1";
+    const bgColor = isNegative
+        ? done ? "#ef4444" : "transparent"
+        : done ? color : "transparent";
+    return (_jsx(motion.button, { onClick: onClick, "aria-label": isNegative ? (done ? "Undo slip" : "Log slip") : (done ? "Mark undone" : "Mark done"), whileTap: { scale: 0.85 }, className: "relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2", style: { borderColor, backgroundColor: bgColor }, children: _jsx(AnimatePresence, { children: done && (_jsx(motion.svg, { initial: { scale: 0, opacity: 0 }, animate: { scale: 1, opacity: 1 }, exit: { scale: 0, opacity: 0 }, transition: { type: "spring", stiffness: 400, damping: 25 }, width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "white", strokeWidth: "2.5", strokeLinecap: "round", strokeLinejoin: "round", children: isNegative ? (_jsxs(_Fragment, { children: [_jsx("line", { x1: "18", y1: "6", x2: "6", y2: "18" }), _jsx("line", { x1: "6", y1: "6", x2: "18", y2: "18" })] })) : (_jsx("polyline", { points: "20 6 9 17 4 12" })) }, "icon")) }) }));
 }
 function HabitRow({ habit, done, index, onToggle }) {
-    return (_jsxs(motion.div, { layout: true, className: "flex items-center gap-3 md:gap-4 rounded-xl border border-border bg-white px-3 md:px-4 py-3 dark:bg-neutral-900 dark:border-neutral-800", animate: { opacity: done ? 0.65 : 1 }, children: [_jsx(CheckCircle, { done: done, color: habit.color, onClick: onToggle }), _jsx("span", { className: "text-xl select-none", children: habit.icon }), _jsxs("div", { className: "flex-1 min-w-0", children: [_jsx("p", { className: `truncate text-sm font-medium transition-colors ${done
-                            ? "line-through text-muted"
-                            : "text-ink dark:text-neutral-100"}`, children: habit.name }), habit.currentStreak > 0 && (_jsxs("p", { className: "text-xs text-muted", children: ["\uD83D\uDD25 ", habit.currentStreak, " day streak"] }))] }), index < 9 && (_jsx("span", { className: "hidden sm:flex h-5 w-5 items-center justify-center rounded border border-border text-[10px] font-mono text-muted dark:border-neutral-700", children: index + 1 }))] }));
+    const isNegative = habit.habitType === "negative";
+    return (_jsxs(motion.div, { layout: true, className: `flex items-center gap-3 md:gap-4 rounded-xl border bg-white px-3 md:px-4 py-3 dark:bg-neutral-900 transition-colors ${isNegative && done
+            ? "border-rose-200 dark:border-rose-900/40"
+            : "border-border dark:border-neutral-800"}`, animate: { opacity: !isNegative && done ? 0.65 : 1 }, children: [_jsx(CheckCircle, { done: done, color: habit.color, onClick: onToggle, isNegative: isNegative }), _jsx("span", { className: "text-xl select-none", children: habit.icon }), _jsxs("div", { className: "flex-1 min-w-0", children: [_jsxs("div", { className: "flex items-center gap-1.5 min-w-0", children: [_jsx("p", { className: `truncate text-sm font-medium transition-colors ${!isNegative && done
+                                    ? "line-through text-muted"
+                                    : "text-ink dark:text-neutral-100"}`, children: habit.name }), isNegative && (_jsx("span", { className: "shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-500 dark:bg-rose-900/30 dark:text-rose-400", children: "break" }))] }), isNegative ? (done ? (_jsx("p", { className: "text-xs text-rose-400 font-medium", children: "Slipped today" })) : habit.currentStreak > 0 ? (_jsxs("p", { className: "text-xs text-emerald-500", children: ["\u2728 ", habit.currentStreak, " clean days"] })) : null) : (habit.currentStreak > 0 && (_jsxs("p", { className: "text-xs text-muted", children: ["\uD83D\uDD25 ", habit.currentStreak, " day streak"] })))] }), index < 9 && (_jsx("span", { className: "hidden sm:flex h-5 w-5 items-center justify-center rounded border border-border text-[10px] font-mono text-muted dark:border-neutral-700", children: index + 1 }))] }));
 }
 // ── Main list ─────────────────────────────────────────────────────────────────
 export function TodayHabitList() {
