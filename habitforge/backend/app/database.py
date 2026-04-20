@@ -12,9 +12,18 @@ from sqlalchemy.orm import DeclarativeBase
 
 DATABASE_URL = os.getenv("HABITFORGE_DB_URL", "sqlite+aiosqlite:///./habitforge.db")
 
-# Railway provides 'postgresql://' but SQLAlchemy async needs 'postgresql+asyncpg://'
-if DATABASE_URL.startswith("postgresql://"):
+# Normalise the URL so SQLAlchemy always uses the async asyncpg driver.
+# Railway can supply any of these schemes:
+#   postgres://            – short Heroku/Railway form
+#   postgresql://          – standard libpq form
+#   postgresql+psycopg2:// – explicit sync driver (wrong for async)
+# All three must become postgresql+asyncpg://.
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
+elif DATABASE_URL.startswith("postgresql://"):
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+elif DATABASE_URL.startswith("postgresql+psycopg2://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql+psycopg2://", "postgresql+asyncpg://", 1)
 
 
 engine = create_async_engine(DATABASE_URL, echo=False, future=True)
