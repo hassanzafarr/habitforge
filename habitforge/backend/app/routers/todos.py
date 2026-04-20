@@ -61,7 +61,7 @@ async def update_todo(
     if "completed" in data:
         new_completed = data.pop("completed")
         todo.completed = new_completed
-        todo.completed_at = datetime.now(timezone.utc) if new_completed else None
+        todo.completed_at = datetime.now(timezone.utc).replace(tzinfo=None) if new_completed else None
 
     for k, v in data.items():
         setattr(todo, k, v)
