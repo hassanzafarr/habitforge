@@ -17,24 +17,29 @@ interface CheckCircleProps {
   done: boolean;
   color: string;
   onClick: () => void;
+  isNegative?: boolean;
 }
 
-function CheckCircle({ done, color, onClick }: CheckCircleProps) {
+function CheckCircle({ done, color, onClick, isNegative }: CheckCircleProps) {
+  const borderColor = isNegative
+    ? done ? "#ef4444" : "#22c55e"
+    : done ? color : "#d6d3d1";
+  const bgColor = isNegative
+    ? done ? "#ef4444" : "transparent"
+    : done ? color : "transparent";
+
   return (
     <motion.button
       onClick={onClick}
-      aria-label={done ? "Mark undone" : "Mark done"}
+      aria-label={isNegative ? (done ? "Undo slip" : "Log slip") : (done ? "Mark undone" : "Mark done")}
       whileTap={{ scale: 0.85 }}
       className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-      style={{
-        borderColor: done ? color : "#d6d3d1",
-        backgroundColor: done ? color : "transparent",
-      }}
+      style={{ borderColor, backgroundColor: bgColor }}
     >
       <AnimatePresence>
         {done && (
           <motion.svg
-            key="check"
+            key="icon"
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
@@ -48,7 +53,14 @@ function CheckCircle({ done, color, onClick }: CheckCircleProps) {
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <polyline points="20 6 9 17 4 12" />
+            {isNegative ? (
+              <>
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </>
+            ) : (
+              <polyline points="20 6 9 17 4 12" />
+            )}
           </motion.svg>
         )}
       </AnimatePresence>
@@ -66,26 +78,46 @@ interface HabitRowProps {
 }
 
 function HabitRow({ habit, done, index, onToggle }: HabitRowProps) {
+  const isNegative = habit.habitType === "negative";
   return (
     <motion.div
       layout
-      className="flex items-center gap-3 md:gap-4 rounded-xl border border-border bg-white px-3 md:px-4 py-3 dark:bg-neutral-900 dark:border-neutral-800"
-      animate={{ opacity: done ? 0.65 : 1 }}
+      className={`flex items-center gap-3 md:gap-4 rounded-xl border bg-white px-3 md:px-4 py-3 dark:bg-neutral-900 transition-colors ${
+        isNegative && done
+          ? "border-rose-200 dark:border-rose-900/40"
+          : "border-border dark:border-neutral-800"
+      }`}
+      animate={{ opacity: !isNegative && done ? 0.65 : 1 }}
     >
-      <CheckCircle done={done} color={habit.color} onClick={onToggle} />
+      <CheckCircle done={done} color={habit.color} onClick={onToggle} isNegative={isNegative} />
       <span className="text-xl select-none">{habit.icon}</span>
       <div className="flex-1 min-w-0">
-        <p
-          className={`truncate text-sm font-medium transition-colors ${
-            done
-              ? "line-through text-muted"
-              : "text-ink dark:text-neutral-100"
-          }`}
-        >
-          {habit.name}
-        </p>
-        {habit.currentStreak > 0 && (
-          <p className="text-xs text-muted">🔥 {habit.currentStreak} day streak</p>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <p
+            className={`truncate text-sm font-medium transition-colors ${
+              !isNegative && done
+                ? "line-through text-muted"
+                : "text-ink dark:text-neutral-100"
+            }`}
+          >
+            {habit.name}
+          </p>
+          {isNegative && (
+            <span className="shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-500 dark:bg-rose-900/30 dark:text-rose-400">
+              break
+            </span>
+          )}
+        </div>
+        {isNegative ? (
+          done ? (
+            <p className="text-xs text-rose-400 font-medium">Slipped today</p>
+          ) : habit.currentStreak > 0 ? (
+            <p className="text-xs text-emerald-500">✨ {habit.currentStreak} clean days</p>
+          ) : null
+        ) : (
+          habit.currentStreak > 0 && (
+            <p className="text-xs text-muted">🔥 {habit.currentStreak} day streak</p>
+          )
         )}
       </div>
       {index < 9 && (

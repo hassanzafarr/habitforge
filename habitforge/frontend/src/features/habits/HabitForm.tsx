@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { CheckCircle2, XCircle } from "lucide-react";
 import { api, qk } from "@/lib/api";
-import type { Habit, HabitCreate, FrequencyType } from "@/lib/types";
+import type { Habit, HabitCreate, FrequencyType, HabitType } from "@/lib/types";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
@@ -33,6 +34,7 @@ interface FormState {
   frequencyType: FrequencyType;
   targetPerWeek: number;
   activeDays: number[];
+  habitType: HabitType;
 }
 
 const DEFAULT: FormState = {
@@ -43,6 +45,7 @@ const DEFAULT: FormState = {
   frequencyType: "daily",
   targetPerWeek: 3,
   activeDays: [1, 3, 5],
+  habitType: "positive",
 };
 
 function toFormState(h?: Habit): FormState {
@@ -55,6 +58,7 @@ function toFormState(h?: Habit): FormState {
     frequencyType: h.frequencyType,
     targetPerWeek: h.targetPerWeek,
     activeDays: h.activeDays,
+    habitType: h.habitType ?? "positive",
   };
 }
 
@@ -116,6 +120,7 @@ export function HabitForm({ open, onClose, habit }: Props) {
       frequencyType: form.frequencyType,
       targetPerWeek: form.targetPerWeek,
       activeDays: form.frequencyType === "custom_days" ? form.activeDays : [],
+      habitType: form.habitType,
     };
     isEdit ? updateMut.mutate(body) : createMut.mutate(body);
   };
@@ -131,12 +136,45 @@ export function HabitForm({ open, onClose, habit }: Props) {
         {/* Preview pill */}
         <div className="flex items-center gap-3 rounded-lg border border-border p-3 dark:border-neutral-700">
           <span className="text-2xl">{form.icon}</span>
-          <span
-            className="text-sm font-semibold"
-            style={{ color: form.color }}
-          >
+          <span className="text-sm font-semibold" style={{ color: form.color }}>
             {form.name || "Habit name"}
           </span>
+          {form.habitType === "negative" && (
+            <span className="ml-auto text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
+              break
+            </span>
+          )}
+        </div>
+
+        {/* Habit type */}
+        <div>
+          <p className="mb-1.5 text-xs font-medium text-muted">Habit type</p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => set("habitType", "positive")}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg border text-sm font-medium transition-all",
+                form.habitType === "positive"
+                  ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400"
+                  : "border-border text-muted hover:border-ink dark:border-neutral-700"
+              )}
+            >
+              <CheckCircle2 size={15} /> Build habit
+            </button>
+            <button
+              type="button"
+              onClick={() => set("habitType", "negative")}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg border text-sm font-medium transition-all",
+                form.habitType === "negative"
+                  ? "border-rose-500 bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400"
+                  : "border-border text-muted hover:border-ink dark:border-neutral-700"
+              )}
+            >
+              <XCircle size={15} /> Break habit
+            </button>
+          </div>
         </div>
 
         {/* Emoji row */}

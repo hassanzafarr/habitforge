@@ -192,6 +192,75 @@ def _weekly_streak(
     return streak, longest
 
 
+# ---------- negative habits (habits to break) ----------
+
+def _negative_streak(
+    by_date: dict[date, CompletionStatus],
+    habit: Habit,
+    as_of: date,
+) -> int:
+    """
+    Streak = consecutive clean days (no 'done' slip) going back from as_of.
+    Today counts as clean if no slip recorded yet.
+    """
+    habit_created = habit.created_at.date() if habit.created_at else date.min
+    streak = 0
+    day = as_of
+    while day >= habit_created:
+        if not _is_due(habit, day):
+            day -= timedelta(days=1)
+            continue
+        if by_date.get(day) == CompletionStatus.done:
+            break  # slipped — streak ends
+        streak += 1
+        day -= timedelta(days=1)
+    return streak
+
+
+def _negative_longest(
+    by_date: dict[date, CompletionStatus],
+    habit: Habit,
+    as_of: date,
+) -> int:
+    """Longest run of consecutive clean days since habit creation."""
+    habit_created = habit.created_at.date() if habit.created_at else date.min
+    longest = 0
+    run = 0
+    day = habit_created
+    while day <= as_of:
+        if not _is_due(habit, day):
+            day += timedelta(days=1)
+            continue
+        if by_date.get(day) == CompletionStatus.done:
+            run = 0
+        else:
+            run += 1
+            longest = max(longest, run)
+        day += timedelta(days=1)
+    return longest
+
+
+def _negative_rate_30d(
+    by_date: dict[date, CompletionStatus],
+    habit: Habit,
+    as_of: date,
+) -> float:
+    """Rate = clean days / due days in last 30 days (higher = better)."""
+    window_start = as_of - timedelta(days=29)
+    due = 0
+    clean = 0
+    day = window_start
+    while day <= as_of:
+        if _is_due(habit, day):
+            due += 1
+            if by_date.get(day) != CompletionStatus.done:
+                clean += 1
+        day += timedelta(days=1)
+    if due == 0:
+        return 0.0
+    return round(clean / due, 4)
+
+
 # ---------- rate / totals ----------
 
 def _completion_rate_30d(
@@ -243,6 +312,21 @@ def compute_streak(
 ) -> StreakInfo:
     by_date = _dedupe_by_date(completions)
     total_done = sum(1 for s in by_date.values() if s == CompletionStatus.done)
+
+    is_negative = getattr(habit, "habit_type", "positive") == "negative"
+
+    if is_negative:
+        current = _negative_streak(by_date, habit, as_of)
+        longest = _negative_longest(by_date, habit, as_of)
+        longest = max(longest, current)
+        rate = _negative_rate_30d(by_date, habit, as_of)
+        # total_completions = total slips for negative habits
+        return StreakInfo(
+            current_streak=current,
+            longest_streak=longest,
+            completion_rate_30d=rate,
+            total_completions=total_done,
+        )
 
     if habit.frequency_type == FrequencyType.weekly:
         current, longest = _weekly_streak(by_date, habit, as_of)

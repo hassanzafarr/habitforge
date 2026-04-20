@@ -27,6 +27,7 @@ class HabitBase(CamelModel):
     frequency_type: FrequencyType = FrequencyType.daily
     target_per_week: int = Field(default=7, ge=1, le=7)
     active_days: list[int] = Field(default_factory=list)
+    habit_type: str = "positive"
 
 
 class HabitCreate(HabitBase):
@@ -42,6 +43,7 @@ class HabitUpdate(CamelModel):
     target_per_week: Optional[int] = Field(default=None, ge=1, le=7)
     active_days: Optional[list[int]] = None
     sort_order: Optional[int] = None
+    habit_type: Optional[str] = None
 
 
 class HabitRead(HabitBase):

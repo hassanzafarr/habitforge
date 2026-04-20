@@ -1,5 +1,6 @@
 export type FrequencyType = "daily" | "weekly" | "custom_days";
 export type CompletionStatus = "done" | "skipped";
+export type HabitType = "positive" | "negative";
 
 export interface Habit {
   id: number;
@@ -10,6 +11,7 @@ export interface Habit {
   frequencyType: FrequencyType;
   targetPerWeek: number;
   activeDays: number[];
+  habitType: HabitType;
   createdAt: string;
   archivedAt: string | null;
   sortOrder: number;
@@ -58,6 +60,7 @@ export interface HabitCreate {
   frequencyType?: FrequencyType;
   targetPerWeek?: number;
   activeDays?: number[];
+  habitType?: HabitType;
 }
 
 export type HabitUpdate = Partial<HabitCreate> & { sortOrder?: number };

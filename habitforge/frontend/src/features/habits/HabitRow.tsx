@@ -73,20 +73,31 @@ export function HabitRow({ habit, showArchived }: Props) {
 
         {/* Name + frequency */}
         <div className="flex-1 min-w-0">
-          <button
-            onClick={() => navigate(`/habits/${habit.id}`)}
-            className="truncate text-sm font-medium text-ink hover:underline dark:text-neutral-100 text-left"
-          >
-            {habit.name}
-          </button>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <button
+              onClick={() => navigate(`/habits/${habit.id}`)}
+              className="truncate text-sm font-medium text-ink hover:underline dark:text-neutral-100 text-left"
+            >
+              {habit.name}
+            </button>
+            {habit.habitType === "negative" && (
+              <span className="shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-500 dark:bg-rose-900/30 dark:text-rose-400">
+                break
+              </span>
+            )}
+          </div>
           <p className="text-xs text-muted">{frequencyLabel(habit)}</p>
         </div>
 
         {/* Stats */}
         <div className="hidden sm:flex items-center gap-6 text-center">
           <div>
-            <p className="text-sm font-semibold text-ink dark:text-white">🔥{habit.currentStreak}</p>
-            <p className="text-[10px] text-muted">streak</p>
+            <p className="text-sm font-semibold text-ink dark:text-white">
+              {habit.habitType === "negative" ? "✨" : "🔥"}{habit.currentStreak}
+            </p>
+            <p className="text-[10px] text-muted">
+              {habit.habitType === "negative" ? "clean" : "streak"}
+            </p>
           </div>
           <div>
             <p className="text-sm font-semibold text-ink dark:text-white">{habit.longestStreak}</p>
