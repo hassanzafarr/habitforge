@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import enum
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 from typing import Optional
 
 from sqlalchemy import (
@@ -21,7 +21,7 @@ from app.database import Base
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.utcnow()
 
 
 class FrequencyType(str, enum.Enum):
