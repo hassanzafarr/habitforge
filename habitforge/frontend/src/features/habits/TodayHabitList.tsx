@@ -108,10 +108,18 @@ export function TodayHabitList() {
     queryFn: () => api.listHabits(),
   });
 
-  // Optimistic local set of completed habit IDs for today
-  const [localDone, setLocalDone] = useState<Set<number>>(new Set());
+  // Optimistic overrides. Server `completedToday` remains the durable source of truth.
+  const [localDoneOverrides, setLocalDoneOverrides] = useState<Map<number, boolean>>(
+    new Map()
+  );
   const habitsRef = useRef(habits);
   habitsRef.current = habits;
+
+  function isHabitDone(habit: Habit): boolean {
+    const override = localDoneOverrides.get(habit.id);
+    if (override !== undefined) return override;
+    return habit.completedToday;
+  }
 
   // Listen for 1-9 keyboard shortcut events
   useEffect(() => {
@@ -131,10 +139,10 @@ export function TodayHabitList() {
       qc.invalidateQueries({ queryKey: qk.habits() });
     },
     onError: (_err, id) => {
-      setLocalDone((prev) => {
-        const s = new Set(prev);
-        s.delete(id);
-        return s;
+      setLocalDoneOverrides((prev) => {
+        const m = new Map(prev);
+        m.delete(id);
+        return m;
       });
       toast.error("Failed to mark habit");
     },
@@ -147,26 +155,50 @@ export function TodayHabitList() {
       qc.invalidateQueries({ queryKey: qk.habits() });
     },
     onError: (_err, id) => {
-      setLocalDone((prev) => new Set([...prev, id]));
+      setLocalDoneOverrides((prev) => {
+        const m = new Map(prev);
+        m.set(id, true);
+        return m;
+      });
       toast.error("Failed to unmark habit");
     },
   });
 
   function toggleHabit(habit: Habit) {
-    if (localDone.has(habit.id)) {
+    if (isHabitDone(habit)) {
       // optimistic remove
-      setLocalDone((prev) => {
-        const s = new Set(prev);
-        s.delete(habit.id);
-        return s;
+      setLocalDoneOverrides((prev) => {
+        const m = new Map(prev);
+        m.set(habit.id, false);
+        return m;
       });
       deleteMut.mutate(habit.id);
     } else {
       // optimistic add
-      setLocalDone((prev) => new Set([...prev, habit.id]));
+      setLocalDoneOverrides((prev) => {
+        const m = new Map(prev);
+        m.set(habit.id, true);
+        return m;
+      });
       upsertMut.mutate(habit.id);
     }
   }
+
+  useEffect(() => {
+    if (!habits?.length) return;
+    // Drop overrides once server data matches, preventing stale local flags.
+    setLocalDoneOverrides((prev) => {
+      if (prev.size === 0) return prev;
+      const next = new Map(prev);
+      for (const [id, value] of prev) {
+        const habit = habits.find((h) => h.id === id);
+        if (!habit || habit.completedToday === value) {
+          next.delete(id);
+        }
+      }
+      return next;
+    });
+  }, [habits]);
 
   if (isLoading) {
     return (
@@ -200,7 +232,7 @@ export function TodayHabitList() {
           <HabitRow
             key={habit.id}
             habit={habit}
-            done={localDone.has(habit.id)}
+            done={isHabitDone(habit)}
             index={i}
             onToggle={() => toggleHabit(habit)}
           />

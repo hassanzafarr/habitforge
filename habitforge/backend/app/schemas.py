@@ -49,6 +49,7 @@ class HabitRead(HabitBase):
     created_at: datetime
     archived_at: Optional[datetime] = None
     sort_order: int
+    completed_today: bool = False
     current_streak: int = 0
     longest_streak: int = 0
     completion_rate_30d: float = 0.0

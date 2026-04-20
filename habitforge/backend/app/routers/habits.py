@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session
-from app.models import Habit
+from app.models import CompletionStatus, Habit
 from app.schemas import HabitCreate, HabitRead, HabitUpdate, ReorderItem
 from app.services.streak import compute_streak
 
@@ -20,6 +20,9 @@ Session = Annotated[AsyncSession, Depends(get_session)]
 def _to_read(h: Habit, as_of: date | None = None) -> HabitRead:
     as_of = as_of or date.today()
     info = compute_streak(list(h.completions), h, as_of)
+    completed_today = any(
+        c.date == as_of and c.status == CompletionStatus.done for c in h.completions
+    )
     data = {
         "id": h.id,
         "name": h.name,
@@ -32,6 +35,7 @@ def _to_read(h: Habit, as_of: date | None = None) -> HabitRead:
         "created_at": h.created_at,
         "archived_at": h.archived_at,
         "sort_order": h.sort_order,
+        "completed_today": completed_today,
         "current_streak": info.current_streak,
         "longest_streak": info.longest_streak,
         "completion_rate_30d": info.completion_rate_30d,

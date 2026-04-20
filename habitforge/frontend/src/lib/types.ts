@@ -13,6 +13,7 @@ export interface Habit {
   createdAt: string;
   archivedAt: string | null;
   sortOrder: number;
+  completedToday: boolean;
   currentStreak: number;
   longestStreak: number;
   completionRate30d: number;

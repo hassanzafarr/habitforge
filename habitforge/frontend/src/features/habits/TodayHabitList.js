@@ -29,10 +29,16 @@ export function TodayHabitList() {
         queryKey: qk.habits(),
         queryFn: () => api.listHabits(),
     });
-    // Optimistic local set of completed habit IDs for today
-    const [localDone, setLocalDone] = useState(new Set());
+    // Optimistic overrides. Server `completedToday` remains the durable source of truth.
+    const [localDoneOverrides, setLocalDoneOverrides] = useState(new Map());
     const habitsRef = useRef(habits);
     habitsRef.current = habits;
+    function isHabitDone(habit) {
+        const override = localDoneOverrides.get(habit.id);
+        if (override !== undefined)
+            return override;
+        return habit.completedToday;
+    }
     // Listen for 1-9 keyboard shortcut events
     useEffect(() => {
         const handler = (e) => {
@@ -51,10 +57,10 @@ export function TodayHabitList() {
             qc.invalidateQueries({ queryKey: qk.habits() });
         },
         onError: (_err, id) => {
-            setLocalDone((prev) => {
-                const s = new Set(prev);
-                s.delete(id);
-                return s;
+            setLocalDoneOverrides((prev) => {
+                const m = new Map(prev);
+                m.delete(id);
+                return m;
             });
             toast.error("Failed to mark habit");
         },
@@ -66,31 +72,56 @@ export function TodayHabitList() {
             qc.invalidateQueries({ queryKey: qk.habits() });
         },
         onError: (_err, id) => {
-            setLocalDone((prev) => new Set([...prev, id]));
+            setLocalDoneOverrides((prev) => {
+                const m = new Map(prev);
+                m.set(id, true);
+                return m;
+            });
             toast.error("Failed to unmark habit");
         },
     });
     function toggleHabit(habit) {
-        if (localDone.has(habit.id)) {
+        if (isHabitDone(habit)) {
             // optimistic remove
-            setLocalDone((prev) => {
-                const s = new Set(prev);
-                s.delete(habit.id);
-                return s;
+            setLocalDoneOverrides((prev) => {
+                const m = new Map(prev);
+                m.set(habit.id, false);
+                return m;
             });
             deleteMut.mutate(habit.id);
         }
         else {
             // optimistic add
-            setLocalDone((prev) => new Set([...prev, habit.id]));
+            setLocalDoneOverrides((prev) => {
+                const m = new Map(prev);
+                m.set(habit.id, true);
+                return m;
+            });
             upsertMut.mutate(habit.id);
         }
     }
+    useEffect(() => {
+        if (!habits?.length)
+            return;
+        // Drop overrides once server data matches, preventing stale local flags.
+        setLocalDoneOverrides((prev) => {
+            if (prev.size === 0)
+                return prev;
+            const next = new Map(prev);
+            for (const [id, value] of prev) {
+                const habit = habits.find((h) => h.id === id);
+                if (!habit || habit.completedToday === value) {
+                    next.delete(id);
+                }
+            }
+            return next;
+        });
+    }, [habits]);
     if (isLoading) {
         return (_jsx("div", { className: "flex flex-col gap-2", children: [1, 2, 3].map((i) => (_jsx(Skeleton, { className: "h-16 w-full rounded-xl" }, i))) }));
     }
     if (!habits?.length) {
         return (_jsxs("div", { className: "rounded-xl border border-dashed border-border p-8 text-center dark:border-neutral-700", children: [_jsx("p", { className: "text-3xl mb-2", children: "\uD83C\uDFAF" }), _jsxs("p", { className: "text-sm text-muted", children: ["No habits yet. Press", " ", _jsx("kbd", { className: "px-1.5 py-0.5 rounded border border-border text-xs dark:border-neutral-700", children: "N" }), " ", "to add one."] })] }));
     }
-    return (_jsx("div", { className: "flex flex-col gap-2", children: _jsx(AnimatePresence, { initial: false, children: habits.map((habit, i) => (_jsx(HabitRow, { habit: habit, done: localDone.has(habit.id), index: i, onToggle: () => toggleHabit(habit) }, habit.id))) }) }));
+    return (_jsx("div", { className: "flex flex-col gap-2", children: _jsx(AnimatePresence, { initial: false, children: habits.map((habit, i) => (_jsx(HabitRow, { habit: habit, done: isHabitDone(habit), index: i, onToggle: () => toggleHabit(habit) }, habit.id))) }) }));
 }
