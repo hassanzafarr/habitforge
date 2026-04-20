@@ -172,7 +172,7 @@ export function NoteEditor({ note, onClose }: Props) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-2xl bg-white dark:bg-neutral-900 shadow-2xl border border-border dark:border-neutral-700 overflow-hidden"
+        className="relative w-full max-w-4xl h-[70vh] min-h-[400px] max-h-[92vh] flex flex-col rounded-2xl bg-white dark:bg-neutral-900 shadow-2xl border border-border dark:border-neutral-700 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

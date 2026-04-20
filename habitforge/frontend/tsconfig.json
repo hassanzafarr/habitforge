@@ -17,7 +17,8 @@
     "allowSyntheticDefaultImports": true,
     "useDefineForClassFields": true,
     "baseUrl": ".",
-    "paths": { "@/*": ["src/*"] }
+    "paths": { "@/*": ["src/*"] },
+    "noEmit": true
   },
   "include": ["src"]
 }
