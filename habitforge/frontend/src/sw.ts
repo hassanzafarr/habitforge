@@ -8,12 +8,12 @@ import { CacheFirst, NetworkFirst } from "workbox-strategies";
 import { CacheableResponsePlugin } from "workbox-cacheable-response";
 
 declare let self: ServiceWorkerGlobalScope;
-declare const __WB_MANIFEST: Array<{ url: string; revision: string | null }>;
 
 self.skipWaiting();
 clientsClaim();
 
-precacheAndRoute(__WB_MANIFEST);
+// Required literal for Workbox injectManifest.
+precacheAndRoute(self.__WB_MANIFEST);
 
 registerRoute(
   ({ url }) => /^https:\/\/rsms\.me\/.*/i.test(url.href),
