@@ -35,10 +35,16 @@ function getSubscriptionPayload(sub) {
 export function PushNotificationsCard() {
     const qc = useQueryClient();
     const [isSubscribed, setIsSubscribed] = useState(false);
+    const hasServiceWorker = useMemo(() => typeof window !== "undefined" && "serviceWorker" in navigator, []);
+    const hasPushManager = useMemo(() => typeof window !== "undefined" && "PushManager" in window, []);
+    const hasNotificationApi = useMemo(() => typeof window !== "undefined" && "Notification" in window, []);
     const supported = useMemo(() => typeof window !== "undefined" &&
-        "serviceWorker" in navigator &&
-        "PushManager" in window &&
-        "Notification" in window, []);
+        hasServiceWorker &&
+        hasPushManager &&
+        hasNotificationApi, [hasNotificationApi, hasPushManager, hasServiceWorker]);
+    const isStandalone = useMemo(() => typeof window !== "undefined" &&
+        (window.matchMedia?.("(display-mode: standalone)")?.matches ||
+            navigator.standalone === true), []);
     const { data: pushStatus } = useQuery({
         queryKey: qk.pushStatus(),
         queryFn: api.pushStatus,
@@ -107,11 +113,20 @@ export function PushNotificationsCard() {
     useEffect(() => {
         void syncLocalSubState();
     }, []);
-    if (!supported)
-        return null;
     const pending = enableMutation.isPending || disableMutation.isPending || testMutation.isPending;
     const backendReady = !!pushStatus?.enabled;
-    return (_jsxs(Card, { className: "flex flex-col gap-3", children: [_jsxs("div", { className: "flex items-center justify-between gap-2", children: [_jsxs("div", { children: [_jsx("p", { className: "text-sm font-semibold text-ink dark:text-white", children: "Push Notifications" }), _jsx("p", { className: "text-xs text-muted", children: backendReady
-                                    ? "Enable reminders on this device."
-                                    : "Server push keys are not configured yet." })] }), _jsx("span", { className: "text-xs text-muted", children: pushStatus ? `${pushStatus.count} device(s)` : " " })] }), _jsxs("div", { className: "flex flex-wrap gap-2", children: [_jsxs(Button, { size: "sm", onClick: () => enableMutation.mutate(), disabled: pending || !backendReady || isSubscribed, children: [_jsx(Bell, { size: 14 }), "Enable"] }), _jsxs(Button, { size: "sm", variant: "secondary", onClick: () => disableMutation.mutate(), disabled: pending || !isSubscribed, children: [_jsx(BellOff, { size: 14 }), "Disable"] }), _jsxs(Button, { size: "sm", variant: "secondary", onClick: () => testMutation.mutate(), disabled: pending || !backendReady, children: [_jsx(Send, { size: 14 }), "Send Test"] })] })] }));
+    const supportHint = !hasServiceWorker
+        ? "This browser does not support service workers."
+        : !hasPushManager
+            ? "Push API is unavailable in this browser context. On iPhone/iPad, install HabitForge to Home Screen and open the installed app."
+            : !hasNotificationApi
+                ? "Notifications API is unavailable in this browser."
+                : !isStandalone
+                    ? "Tip: install/open HabitForge as a PWA app for best mobile push support."
+                    : null;
+    return (_jsxs(Card, { className: "flex flex-col gap-3", children: [_jsxs("div", { className: "flex items-center justify-between gap-2", children: [_jsxs("div", { children: [_jsx("p", { className: "text-sm font-semibold text-ink dark:text-white", children: "Push Notifications" }), _jsx("p", { className: "text-xs text-muted", children: !supported
+                                    ? supportHint
+                                    : backendReady
+                                        ? "Enable reminders on this device."
+                                        : "Server push keys are not configured yet." })] }), _jsx("span", { className: "text-xs text-muted", children: supported && pushStatus ? `${pushStatus.count} device(s)` : " " })] }), _jsxs("div", { className: "flex flex-wrap gap-2", children: [_jsxs(Button, { size: "sm", onClick: () => enableMutation.mutate(), disabled: pending || !backendReady || isSubscribed, children: [_jsx(Bell, { size: 14 }), "Enable"] }), _jsxs(Button, { size: "sm", variant: "secondary", onClick: () => disableMutation.mutate(), disabled: pending || !isSubscribed, children: [_jsx(BellOff, { size: 14 }), "Disable"] }), _jsxs(Button, { size: "sm", variant: "secondary", onClick: () => testMutation.mutate(), disabled: pending || !backendReady, children: [_jsx(Send, { size: 14 }), "Send Test"] })] })] }));
 }

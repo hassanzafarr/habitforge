@@ -39,12 +39,28 @@ export function PushNotificationsCard() {
   const qc = useQueryClient();
   const [isSubscribed, setIsSubscribed] = useState(false);
 
+  const hasServiceWorker = useMemo(
+    () => typeof window !== "undefined" && "serviceWorker" in navigator,
+    []
+  );
+  const hasPushManager = useMemo(
+    () => typeof window !== "undefined" && "PushManager" in window,
+    []
+  );
+  const hasNotificationApi = useMemo(
+    () => typeof window !== "undefined" && "Notification" in window,
+    []
+  );
   const supported = useMemo(
     () =>
+      typeof window !== "undefined" && hasServiceWorker && hasPushManager && hasNotificationApi,
+    [hasNotificationApi, hasPushManager, hasServiceWorker]
+  );
+  const isStandalone = useMemo(
+    () =>
       typeof window !== "undefined" &&
-      "serviceWorker" in navigator &&
-      "PushManager" in window &&
-      "Notification" in window,
+      (window.matchMedia?.("(display-mode: standalone)")?.matches ||
+        (navigator as Navigator & { standalone?: boolean }).standalone === true),
     []
   );
 
@@ -121,11 +137,18 @@ export function PushNotificationsCard() {
     void syncLocalSubState();
   }, []);
 
-  if (!supported) return null;
-
   const pending =
     enableMutation.isPending || disableMutation.isPending || testMutation.isPending;
   const backendReady = !!pushStatus?.enabled;
+  const supportHint = !hasServiceWorker
+    ? "This browser does not support service workers."
+    : !hasPushManager
+      ? "Push API is unavailable in this browser context. On iPhone/iPad, install HabitForge to Home Screen and open the installed app."
+      : !hasNotificationApi
+        ? "Notifications API is unavailable in this browser."
+        : !isStandalone
+          ? "Tip: install/open HabitForge as a PWA app for best mobile push support."
+          : null;
 
   return (
     <Card className="flex flex-col gap-3">
@@ -133,13 +156,15 @@ export function PushNotificationsCard() {
         <div>
           <p className="text-sm font-semibold text-ink dark:text-white">Push Notifications</p>
           <p className="text-xs text-muted">
-            {backendReady
+            {!supported
+              ? supportHint
+              : backendReady
               ? "Enable reminders on this device."
               : "Server push keys are not configured yet."}
           </p>
         </div>
         <span className="text-xs text-muted">
-          {pushStatus ? `${pushStatus.count} device(s)` : " "}
+          {supported && pushStatus ? `${pushStatus.count} device(s)` : " "}
         </span>
       </div>
 
