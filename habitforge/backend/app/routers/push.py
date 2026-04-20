@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
@@ -58,7 +58,8 @@ async def subscribe_push(
 ) -> None:
     expiration_dt = None
     if payload.expiration_time is not None:
-        expiration_dt = datetime.fromtimestamp(payload.expiration_time / 1000, tz=UTC)
+        # DB columns are TIMESTAMP WITHOUT TIME ZONE, so write UTC-naive values.
+        expiration_dt = datetime.utcfromtimestamp(payload.expiration_time / 1000)
 
     res = await session.execute(
         select(PushSubscription).where(PushSubscription.endpoint == payload.endpoint)

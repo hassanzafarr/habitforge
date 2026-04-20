@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -61,7 +61,8 @@ async def update_todo(
     if "completed" in data:
         new_completed = data.pop("completed")
         todo.completed = new_completed
-        todo.completed_at = datetime.now(timezone.utc) if new_completed else None
+        # DB columns are TIMESTAMP WITHOUT TIME ZONE, so write UTC-naive values.
+        todo.completed_at = datetime.utcnow() if new_completed else None
 
     for k, v in data.items():
         setattr(todo, k, v)

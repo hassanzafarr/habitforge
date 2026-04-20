@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import random
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta
 
 from sqlalchemy import delete
 
@@ -72,7 +72,7 @@ async def main() -> None:
         for cfg in SAMPLES:
             consistency = cfg.pop("consistency")
             h = Habit(
-                created_at=datetime.now(timezone.utc) - timedelta(days=60),
+                created_at=datetime.utcnow() - timedelta(days=60),
                 **cfg,
             )
             session.add(h)
