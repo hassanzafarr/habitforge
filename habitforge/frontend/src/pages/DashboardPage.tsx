@@ -6,6 +6,7 @@ import { TrendChart } from "@/features/dashboard/TrendChart";
 import { TodayHabitList } from "@/features/habits/TodayHabitList";
 import { Heatmap } from "@/features/heatmap/Heatmap";
 import { HabitForm } from "@/features/habits/HabitForm";
+import { PushNotificationsCard } from "@/features/push/PushNotificationsCard";
 import { Button } from "@/components/ui/Button";
 import { SHORTCUT_EVENTS } from "@/lib/useKeyboardShortcuts";
 
@@ -41,6 +42,8 @@ export function DashboardPage() {
 
       {/* Stat cards */}
       <StatCards />
+
+      <PushNotificationsCard />
 
       {/* Today + trend: stacked on mobile, side-by-side on large screens */}
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">

@@ -105,3 +105,19 @@ Key endpoints:
 - **Today grace rule**: If today's habit is not yet completed, the streak counts the chain ending *yesterday*. Only a missed *yesterday* breaks a streak.
 - **Soft delete**: Habits are archived (not deleted) so historical data is preserved.
 - **camelCase API**: The frontend speaks camelCase; Pydantic's `alias_generator` handles the snake_case↔camelCase conversion transparently.
+
+## PWA Push Notifications
+
+Push notifications are supported for installed PWAs (HTTPS required in production).
+
+Set backend env vars before starting API:
+
+- `HABITFORGE_VAPID_PUBLIC_KEY`
+- `HABITFORGE_VAPID_PRIVATE_KEY`
+- `HABITFORGE_VAPID_SUBJECT` (example: `mailto:you@example.com`)
+
+After configuring keys:
+
+1. Open app on device/browser and install as PWA.
+2. Go to Dashboard > **Push Notifications** card.
+3. Tap **Enable**, allow permission, then **Send Test**.

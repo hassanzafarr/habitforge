@@ -122,3 +122,29 @@ class TodoRead(TodoBase):
     completed: bool
     created_at: datetime
     completed_at: Optional[datetime] = None
+
+
+class PushKeys(CamelModel):
+    p256dh: str
+    auth: str
+
+
+class PushSubscriptionIn(CamelModel):
+    endpoint: str
+    expiration_time: Optional[float] = None
+    keys: PushKeys
+
+
+class PushStatus(CamelModel):
+    enabled: bool
+    count: int
+
+
+class PushPublicKey(CamelModel):
+    public_key: Optional[str] = None
+
+
+class PushTestNotification(CamelModel):
+    title: str = "Habit reminder"
+    body: str = "You still have habits due today."
+    url: str = "/"

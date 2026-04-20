@@ -82,3 +82,29 @@ export interface TodoCreate {
 }
 
 export type TodoUpdate = Partial<TodoCreate> & { completed?: boolean };
+
+export interface PushKeys {
+  p256dh: string;
+  auth: string;
+}
+
+export interface PushSubscriptionPayload {
+  endpoint: string;
+  expirationTime: number | null;
+  keys: PushKeys;
+}
+
+export interface PushStatus {
+  enabled: boolean;
+  count: number;
+}
+
+export interface PushPublicKey {
+  publicKey: string | null;
+}
+
+export interface PushTestNotification {
+  title?: string;
+  body?: string;
+  url?: string;
+}

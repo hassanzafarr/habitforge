@@ -8,6 +8,7 @@ dependencies = [
     "uvicorn[standard]>=0.27",
     "sqlalchemy[asyncio]>=2.0",
     "aiosqlite>=0.19",
+    "pywebpush>=2.0.3",
     "pydantic>=2.6",
     "pydantic-settings>=2.2",
     "python-dateutil>=2.9",

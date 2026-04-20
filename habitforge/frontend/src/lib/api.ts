@@ -8,6 +8,10 @@ import type {
   HeatmapCell,
   Todo,
   TodoCreate,
+  PushStatus,
+  PushPublicKey,
+  PushSubscriptionPayload,
+  PushTestNotification,
   TodoUpdate,
 } from "./types";
 
@@ -72,6 +76,19 @@ export const api = {
     req<Todo>(`/todos/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   deleteTodo: (id: number) =>
     req<void>(`/todos/${id}`, { method: "DELETE" }),
+
+  // Push notifications
+  pushStatus: () => req<PushStatus>("/push/status"),
+  pushPublicKey: () => req<PushPublicKey>("/push/public-key"),
+  subscribePush: (body: PushSubscriptionPayload) =>
+    req<void>("/push/subscribe", { method: "POST", body: JSON.stringify(body) }),
+  unsubscribePush: (endpoint: string) =>
+    req<void>(`/push/unsubscribe?endpoint=${encodeURIComponent(endpoint)}`, { method: "DELETE" }),
+  sendTestPush: (body?: PushTestNotification) =>
+    req<{ sent: number; removed: number; total: number }>("/push/test", {
+      method: "POST",
+      body: JSON.stringify(body ?? {}),
+    }),
 };
 
 export const qk = {
@@ -82,4 +99,5 @@ export const qk = {
   heatmap: (from: string, to: string) => ["heatmap", from, to] as const,
   summary: () => ["summary"] as const,
   todos: (includeCompleted = true) => ["todos", { includeCompleted }] as const,
+  pushStatus: () => ["push-status"] as const,
 };
