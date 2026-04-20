@@ -125,6 +125,36 @@ class TodoRead(TodoBase):
     completed_at: Optional[datetime] = None
 
 
+# ── Notes ────────────────────────────────────────────────────────────────────
+
+class NoteBase(CamelModel):
+    title: str = Field(min_length=1, max_length=200)
+    content: str = Field(default="", max_length=20000)
+    tags: Optional[list[str]] = None
+    pinned: bool = False
+    color: Optional[str] = None
+    habit_id: Optional[int] = None
+
+
+class NoteCreate(NoteBase):
+    pass
+
+
+class NoteUpdate(CamelModel):
+    title: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    content: Optional[str] = Field(default=None, max_length=20000)
+    tags: Optional[list[str]] = None
+    pinned: Optional[bool] = None
+    color: Optional[str] = None
+    habit_id: Optional[int] = None
+
+
+class NoteRead(NoteBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+
 class PushKeys(CamelModel):
     p256dh: str
     auth: str

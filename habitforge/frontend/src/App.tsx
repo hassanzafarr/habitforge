@@ -6,6 +6,7 @@ import { DashboardPage } from "@/pages/DashboardPage";
 import { HabitsPage } from "@/pages/HabitsPage";
 import { HabitDetailPage } from "@/pages/HabitDetailPage";
 import { TodosPage } from "@/pages/TodosPage";
+import { NotesPage } from "@/pages/NotesPage";
 import { useKeyboardShortcuts } from "@/lib/useKeyboardShortcuts";
 import { HabitForm } from "@/features/habits/HabitForm";
 
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="/habits" element={<HabitsPage />} />
           <Route path="/habits/:id" element={<HabitDetailPage />} />
           <Route path="/todos" element={<TodosPage />} />
+          <Route path="/notes" element={<NotesPage />} />
         </Routes>
       </main>
       <BottomNav onNewHabit={() => setShowCreate(true)} />

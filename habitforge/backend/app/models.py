@@ -13,6 +13,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    Text,
     UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -97,6 +98,24 @@ class Todo(Base):
     due_date: Mapped[Optional[date]] = mapped_column(Date, default=None)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow, nullable=False)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=None)
+
+
+class Note(Base):
+    __tablename__ = "notes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    content: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    tags: Mapped[Optional[list]] = mapped_column(JSON, default=None)
+    pinned: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    color: Mapped[Optional[str]] = mapped_column(String(20), default=None)
+    habit_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("habits.id", ondelete="SET NULL"), default=None, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=_utcnow, onupdate=_utcnow, nullable=False
+    )
 
 
 class PushSubscription(Base):

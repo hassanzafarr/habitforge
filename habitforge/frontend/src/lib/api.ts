@@ -6,6 +6,9 @@ import type {
   HabitCreate,
   HabitUpdate,
   HeatmapCell,
+  Note,
+  NoteCreate,
+  NoteUpdate,
   Todo,
   TodoCreate,
   PushStatus,
@@ -77,6 +80,22 @@ export const api = {
   deleteTodo: (id: number) =>
     req<void>(`/todos/${id}`, { method: "DELETE" }),
 
+  // ── Notes ──────────────────────────────────────────────────────────────
+  listNotes: (params?: { q?: string; tag?: string; habitId?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.q) qs.set("q", params.q);
+    if (params?.tag) qs.set("tag", params.tag);
+    if (params?.habitId != null) qs.set("habit_id", String(params.habitId));
+    const query = qs.toString();
+    return req<Note[]>(`/notes${query ? `?${query}` : ""}`);
+  },
+  createNote: (body: NoteCreate) =>
+    req<Note>("/notes", { method: "POST", body: JSON.stringify(body) }),
+  updateNote: (id: number, body: NoteUpdate) =>
+    req<Note>(`/notes/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteNote: (id: number) =>
+    req<void>(`/notes/${id}`, { method: "DELETE" }),
+
   // Push notifications
   pushStatus: () => req<PushStatus>("/push/status"),
   pushPublicKey: () => req<PushPublicKey>("/push/public-key"),
@@ -99,5 +118,6 @@ export const qk = {
   heatmap: (from: string, to: string) => ["heatmap", from, to] as const,
   summary: () => ["summary"] as const,
   todos: (includeCompleted = true) => ["todos", { includeCompleted }] as const,
+  notes: (params?: object) => ["notes", params ?? {}] as const,
   pushStatus: () => ["push-status"] as const,
 };

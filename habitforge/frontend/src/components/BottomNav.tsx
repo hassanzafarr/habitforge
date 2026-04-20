@@ -3,7 +3,7 @@
  * Provides thumb-friendly nav: Dashboard, New Habit (FAB), Habits.
  */
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, ListChecks, CheckSquare, Plus } from "lucide-react";
+import { LayoutDashboard, ListChecks, CheckSquare, NotebookPen, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -24,7 +24,7 @@ export function BottomNav({ onNewHabit }: Props) {
           id="mobile-nav-dashboard"
           className={({ isActive }) =>
             cn(
-              "flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-colors",
+              "flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-colors",
               isActive
                 ? "text-indigo-600 dark:text-indigo-400"
                 : "text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
@@ -41,7 +41,7 @@ export function BottomNav({ onNewHabit }: Props) {
           id="mobile-nav-habits"
           className={({ isActive }) =>
             cn(
-              "flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-colors",
+              "flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-colors",
               isActive
                 ? "text-indigo-600 dark:text-indigo-400"
                 : "text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
@@ -68,7 +68,7 @@ export function BottomNav({ onNewHabit }: Props) {
           id="mobile-nav-todos"
           className={({ isActive }) =>
             cn(
-              "flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-colors",
+              "flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-colors",
               isActive
                 ? "text-indigo-600 dark:text-indigo-400"
                 : "text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
@@ -77,6 +77,23 @@ export function BottomNav({ onNewHabit }: Props) {
         >
           <CheckSquare size={22} />
           <span className="text-[10px] font-medium">To-Do</span>
+        </NavLink>
+
+        {/* Notes */}
+        <NavLink
+          to="/notes"
+          id="mobile-nav-notes"
+          className={({ isActive }) =>
+            cn(
+              "flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-colors",
+              isActive
+                ? "text-indigo-600 dark:text-indigo-400"
+                : "text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+            )
+          }
+        >
+          <NotebookPen size={22} />
+          <span className="text-[10px] font-medium">Notes</span>
         </NavLink>
       </div>
     </nav>

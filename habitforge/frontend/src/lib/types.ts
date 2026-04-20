@@ -84,6 +84,29 @@ export interface TodoCreate {
 
 export type TodoUpdate = Partial<TodoCreate> & { completed?: boolean };
 
+export interface Note {
+  id: number;
+  title: string;
+  content: string;
+  tags: string[] | null;
+  pinned: boolean;
+  color: string | null;
+  habitId: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NoteCreate {
+  title: string;
+  content?: string;
+  tags?: string[] | null;
+  pinned?: boolean;
+  color?: string | null;
+  habitId?: number | null;
+}
+
+export type NoteUpdate = Partial<NoteCreate>;
+
 export interface PushKeys {
   p256dh: string;
   auth: string;

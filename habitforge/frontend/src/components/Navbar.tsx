@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, ListChecks, CheckSquare, Sun, Moon } from "lucide-react";
+import { LayoutDashboard, ListChecks, CheckSquare, NotebookPen, Sun, Moon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +38,7 @@ const LINKS = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/habits", label: "Habits", icon: ListChecks },
   { to: "/todos", label: "To-Do", icon: CheckSquare },
+  { to: "/notes", label: "Notes", icon: NotebookPen },
 ];
 
 export function Navbar() {
