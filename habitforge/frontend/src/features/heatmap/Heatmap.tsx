@@ -141,15 +141,15 @@ export function Heatmap({ baseColor = "#6366f1", habitId, title }: Props) {
   const TOTAL_H = MONTH_H + SVG_H;
 
   return (
-    <div className="relative overflow-x-auto">
+    <div className="relative w-full max-w-full overflow-hidden">
       {title && <p className="mb-2 text-xs font-medium text-muted">{title}</p>}
 
       <svg
         role="grid"
         aria-label="Habit completion heatmap"
-        width={TOTAL_W}
-        height={TOTAL_H}
-        style={{ fontFamily: "inherit" }}
+        viewBox={`0 0 ${TOTAL_W} ${TOTAL_H}`}
+        className="block h-auto w-full"
+        style={{ fontFamily: "inherit", maxWidth: TOTAL_W }}
       >
         {/* Month labels */}
         {monthLabels.map(({ col, label }) => (

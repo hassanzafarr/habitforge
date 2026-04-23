@@ -48,13 +48,13 @@ export function DashboardPage() {
       {/* Today + trend: stacked on mobile, side-by-side on large screens */}
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         {/* Today's habits */}
-        <div>
+        <div className="min-w-0">
           <h2 className="mb-3 text-sm font-semibold text-ink dark:text-white">Today's Habits</h2>
           <TodayHabitList />
         </div>
 
         {/* Right column: trend chart */}
-        <div className="flex flex-col gap-6">
+        <div className="min-w-0 flex flex-col gap-6">
           <TrendChart />
         </div>
       </div>

@@ -4,7 +4,7 @@ import { clientsClaim } from "workbox-core";
 import { ExpirationPlugin } from "workbox-expiration";
 import { precacheAndRoute } from "workbox-precaching";
 import { registerRoute } from "workbox-routing";
-import { CacheFirst, NetworkFirst } from "workbox-strategies";
+import { CacheFirst } from "workbox-strategies";
 import { CacheableResponsePlugin } from "workbox-cacheable-response";
 
 declare let self: ServiceWorkerGlobalScope;
@@ -29,18 +29,10 @@ registerRoute(
   })
 );
 
+// Never cache API responses — they're user-scoped and would leak across accounts.
 registerRoute(
   ({ url }) => /\/api\/.*/i.test(url.pathname),
-  new NetworkFirst({
-    cacheName: "api-cache",
-    plugins: [
-      new ExpirationPlugin({
-        maxEntries: 50,
-        maxAgeSeconds: 60 * 60 * 24,
-      }),
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-    ],
-  })
+  async ({ request }) => fetch(request)
 );
 
 self.addEventListener("push", (event: PushEvent) => {
