@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session
+from app.deps import CurrentUser
 from app.models import Todo
 from app.schemas import TodoCreate, TodoRead, TodoUpdate
 
@@ -16,8 +17,10 @@ router = APIRouter(prefix="/todos", tags=["todos"])
 Session = Annotated[AsyncSession, Depends(get_session)]
 
 
-async def _get_or_404(session: AsyncSession, todo_id: int) -> Todo:
-    res = await session.execute(select(Todo).where(Todo.id == todo_id))
+async def _get_or_404(session: AsyncSession, todo_id: int, user_id: str) -> Todo:
+    res = await session.execute(
+        select(Todo).where(Todo.id == todo_id, Todo.user_id == user_id)
+    )
     todo = res.scalars().one_or_none()
     if todo is None:
         raise HTTPException(status_code=404, detail="Todo not found")
@@ -27,9 +30,14 @@ async def _get_or_404(session: AsyncSession, todo_id: int) -> Todo:
 @router.get("", response_model=list[TodoRead])
 async def list_todos(
     session: Session,
+    user_id: CurrentUser,
     include_completed: bool = Query(default=True),
 ) -> list[TodoRead]:
-    stmt = select(Todo).order_by(Todo.completed, Todo.created_at.desc())
+    stmt = (
+        select(Todo)
+        .where(Todo.user_id == user_id)
+        .order_by(Todo.completed, Todo.created_at.desc())
+    )
     if not include_completed:
         stmt = stmt.where(Todo.completed.is_(False))
     res = await session.execute(stmt)
@@ -37,8 +45,11 @@ async def list_todos(
 
 
 @router.post("", response_model=TodoRead, status_code=status.HTTP_201_CREATED)
-async def create_todo(payload: TodoCreate, session: Session) -> TodoRead:
+async def create_todo(
+    payload: TodoCreate, session: Session, user_id: CurrentUser
+) -> TodoRead:
     todo = Todo(
+        user_id=user_id,
         title=payload.title,
         description=payload.description,
         priority=payload.priority,
@@ -52,16 +63,17 @@ async def create_todo(payload: TodoCreate, session: Session) -> TodoRead:
 
 @router.patch("/{todo_id}", response_model=TodoRead)
 async def update_todo(
-    todo_id: int, payload: TodoUpdate, session: Session
+    todo_id: int,
+    payload: TodoUpdate,
+    session: Session,
+    user_id: CurrentUser,
 ) -> TodoRead:
-    todo = await _get_or_404(session, todo_id)
+    todo = await _get_or_404(session, todo_id, user_id)
     data = payload.model_dump(exclude_unset=True, by_alias=False)
 
-    # handle completed toggling — set/clear completed_at
     if "completed" in data:
         new_completed = data.pop("completed")
         todo.completed = new_completed
-        # DB columns are TIMESTAMP WITHOUT TIME ZONE, so write UTC-naive values.
         todo.completed_at = datetime.utcnow() if new_completed else None
 
     for k, v in data.items():
@@ -73,7 +85,9 @@ async def update_todo(
 
 
 @router.delete("/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_todo(todo_id: int, session: Session) -> None:
-    todo = await _get_or_404(session, todo_id)
+async def delete_todo(
+    todo_id: int, session: Session, user_id: CurrentUser
+) -> None:
+    todo = await _get_or_404(session, todo_id, user_id)
     await session.delete(todo)
     await session.commit()

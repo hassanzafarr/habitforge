@@ -9,6 +9,7 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session
+from app.deps import CurrentUser
 from app.models import Completion, CompletionStatus, FrequencyType, Habit
 from app.schemas import (
     CompletionIn,
@@ -24,8 +25,12 @@ router = APIRouter(tags=["completions"])
 Session = Annotated[AsyncSession, Depends(get_session)]
 
 
-async def _habit_or_404(session: AsyncSession, habit_id: int) -> Habit:
-    res = await session.execute(select(Habit).where(Habit.id == habit_id))
+async def _habit_or_404(
+    session: AsyncSession, habit_id: int, user_id: str
+) -> Habit:
+    res = await session.execute(
+        select(Habit).where(Habit.id == habit_id, Habit.user_id == user_id)
+    )
     h = res.scalars().unique().one_or_none()
     if h is None:
         raise HTTPException(status_code=404, detail="Habit not found")
@@ -38,9 +43,12 @@ async def _habit_or_404(session: AsyncSession, habit_id: int) -> Habit:
     status_code=status.HTTP_200_OK,
 )
 async def upsert_completion(
-    habit_id: int, payload: CompletionIn, session: Session
+    habit_id: int,
+    payload: CompletionIn,
+    session: Session,
+    user_id: CurrentUser,
 ) -> CompletionRead:
-    await _habit_or_404(session, habit_id)
+    await _habit_or_404(session, habit_id, user_id)
     res = await session.execute(
         select(Completion).where(
             and_(Completion.habit_id == habit_id, Completion.date == payload.date)
@@ -69,7 +77,10 @@ async def upsert_completion(
     "/habits/{habit_id}/completions/{d}",
     status_code=status.HTTP_204_NO_CONTENT,
 )
-async def delete_completion(habit_id: int, d: date, session: Session) -> None:
+async def delete_completion(
+    habit_id: int, d: date, session: Session, user_id: CurrentUser
+) -> None:
+    await _habit_or_404(session, habit_id, user_id)
     res = await session.execute(
         select(Completion).where(
             and_(Completion.habit_id == habit_id, Completion.date == d)
@@ -88,9 +99,11 @@ async def delete_completion(habit_id: int, d: date, session: Session) -> None:
 async def list_completions(
     habit_id: int,
     session: Session,
+    user_id: CurrentUser,
     from_: date = Query(alias="from"),
     to: date = Query(...),
 ) -> list[CompletionRead]:
+    await _habit_or_404(session, habit_id, user_id)
     res = await session.execute(
         select(Completion)
         .where(
@@ -110,33 +123,37 @@ def _is_due(habit: Habit, day: date) -> bool:
         return True
     if habit.frequency_type == FrequencyType.custom_days:
         return day.weekday() in (habit.active_days or [])
-    # weekly -> treat every day as a potential slot up to target_per_week
     return True
 
 
 @router.get("/completions/heatmap", response_model=list[HeatmapCell])
 async def heatmap(
     session: Session,
+    user_id: CurrentUser,
     from_: date = Query(alias="from"),
     to: date = Query(...),
 ) -> list[HeatmapCell]:
-    # Active habits
-    res = await session.execute(select(Habit).where(Habit.archived_at.is_(None)))
-    habits = res.scalars().unique().all()
-
-    # Completions in range
     res = await session.execute(
-        select(Completion).where(
-            and_(Completion.date >= from_, Completion.date <= to)
-        )
+        select(Habit).where(Habit.user_id == user_id, Habit.archived_at.is_(None))
     )
-    comps = res.scalars().all()
-    done_counts: dict[date, int] = defaultdict(int)
-    for c in comps:
-        if c.status == CompletionStatus.done:
-            done_counts[c.date] += 1
+    habits = res.scalars().unique().all()
+    habit_ids = [h.id for h in habits]
 
-    # Due counts per day
+    done_counts: dict[date, int] = defaultdict(int)
+    if habit_ids:
+        res = await session.execute(
+            select(Completion).where(
+                and_(
+                    Completion.habit_id.in_(habit_ids),
+                    Completion.date >= from_,
+                    Completion.date <= to,
+                )
+            )
+        )
+        for c in res.scalars().all():
+            if c.status == CompletionStatus.done:
+                done_counts[c.date] += 1
+
     cells: list[HeatmapCell] = []
     day = from_
     while day <= to:
@@ -149,9 +166,13 @@ async def heatmap(
 
 
 @router.get("/dashboard/summary", response_model=DashboardSummary)
-async def dashboard_summary(session: Session) -> DashboardSummary:
+async def dashboard_summary(
+    session: Session, user_id: CurrentUser
+) -> DashboardSummary:
     today = date.today()
-    res = await session.execute(select(Habit).where(Habit.archived_at.is_(None)))
+    res = await session.execute(
+        select(Habit).where(Habit.user_id == user_id, Habit.archived_at.is_(None))
+    )
     habits = res.scalars().unique().all()
 
     due_today = sum(1 for h in habits if _is_due(h, today))
@@ -162,16 +183,7 @@ async def dashboard_summary(session: Session) -> DashboardSummary:
     weekly_due = 0
 
     week_start = today - timedelta(days=today.weekday())
-
-    # Pre-fetch all completions in last 30 days (and this week)
     window_start = today - timedelta(days=29)
-    res = await session.execute(
-        select(Completion).where(Completion.date >= window_start)
-    )
-    comps_all = res.scalars().all()
-    by_habit: dict[int, list[Completion]] = defaultdict(list)
-    for c in comps_all:
-        by_habit[c.habit_id].append(c)
 
     for h in habits:
         hcomps = list(h.completions)
@@ -179,13 +191,11 @@ async def dashboard_summary(session: Session) -> DashboardSummary:
         overall_current += info.current_streak
         overall_longest = max(overall_longest, info.longest_streak)
 
-        # completed today
         for c in hcomps:
             if c.date == today and c.status == CompletionStatus.done:
                 completed_today += 1
                 break
 
-        # weekly rate: count done vs due this week
         day = week_start
         while day <= today:
             if _is_due(h, day):
@@ -198,7 +208,6 @@ async def dashboard_summary(session: Session) -> DashboardSummary:
 
     weekly_rate = round(weekly_done / weekly_due, 4) if weekly_due else 0.0
 
-    # 30-day trend: daily overall rate
     trend: list[TrendPoint] = []
     day = window_start
     while day <= today:

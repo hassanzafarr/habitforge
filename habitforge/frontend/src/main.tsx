@@ -5,6 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 import { Toaster } from "sonner";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { ClerkProvider } from "@clerk/react";
+import { AuthBridge } from "./lib/AuthBridge";
 import App from "./App";
 import "./index.css";
 
@@ -28,11 +29,13 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <ClerkProvider publishableKey={PUBLISHABLE_KEY} afterSignOutUrl="/">
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <App />
-          <Toaster richColors position="bottom-right" />
-          <SpeedInsights />
-        </BrowserRouter>
+        <AuthBridge>
+          <BrowserRouter>
+            <App />
+            <Toaster richColors position="bottom-right" />
+            <SpeedInsights />
+          </BrowserRouter>
+        </AuthBridge>
       </QueryClientProvider>
     </ClerkProvider>
   </React.StrictMode>

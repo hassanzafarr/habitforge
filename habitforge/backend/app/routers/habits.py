@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session
+from app.deps import CurrentUser
 from app.models import CompletionStatus, Habit
 from app.schemas import HabitCreate, HabitRead, HabitUpdate, ReorderItem
 from app.services.streak import compute_streak
@@ -47,9 +48,14 @@ def _to_read(h: Habit, as_of: date | None = None) -> HabitRead:
 @router.get("", response_model=list[HabitRead])
 async def list_habits(
     session: Session,
+    user_id: CurrentUser,
     include_archived: bool = Query(default=False),
 ) -> list[HabitRead]:
-    stmt = select(Habit).order_by(Habit.sort_order, Habit.id)
+    stmt = (
+        select(Habit)
+        .where(Habit.user_id == user_id)
+        .order_by(Habit.sort_order, Habit.id)
+    )
     if not include_archived:
         stmt = stmt.where(Habit.archived_at.is_(None))
     res = await session.execute(stmt)
@@ -58,13 +64,15 @@ async def list_habits(
 
 
 @router.post("", response_model=HabitRead, status_code=status.HTTP_201_CREATED)
-async def create_habit(payload: HabitCreate, session: Session) -> HabitRead:
-    # pick next sort_order
-    res = await session.execute(select(Habit))
+async def create_habit(
+    payload: HabitCreate, session: Session, user_id: CurrentUser
+) -> HabitRead:
+    res = await session.execute(select(Habit).where(Habit.user_id == user_id))
     existing = res.scalars().unique().all()
     next_order = (max((h.sort_order for h in existing), default=-1)) + 1
 
     h = Habit(
+        user_id=user_id,
         name=payload.name,
         description=payload.description,
         icon=payload.icon,
@@ -80,8 +88,10 @@ async def create_habit(payload: HabitCreate, session: Session) -> HabitRead:
     return _to_read(h)
 
 
-async def _get_or_404(session: AsyncSession, habit_id: int) -> Habit:
-    res = await session.execute(select(Habit).where(Habit.id == habit_id))
+async def _get_or_404(session: AsyncSession, habit_id: int, user_id: str) -> Habit:
+    res = await session.execute(
+        select(Habit).where(Habit.id == habit_id, Habit.user_id == user_id)
+    )
     h = res.scalars().unique().one_or_none()
     if h is None:
         raise HTTPException(status_code=404, detail="Habit not found")
@@ -89,16 +99,21 @@ async def _get_or_404(session: AsyncSession, habit_id: int) -> Habit:
 
 
 @router.get("/{habit_id}", response_model=HabitRead)
-async def get_habit(habit_id: int, session: Session) -> HabitRead:
-    h = await _get_or_404(session, habit_id)
+async def get_habit(
+    habit_id: int, session: Session, user_id: CurrentUser
+) -> HabitRead:
+    h = await _get_or_404(session, habit_id, user_id)
     return _to_read(h)
 
 
 @router.patch("/{habit_id}", response_model=HabitRead)
 async def update_habit(
-    habit_id: int, payload: HabitUpdate, session: Session
+    habit_id: int,
+    payload: HabitUpdate,
+    session: Session,
+    user_id: CurrentUser,
 ) -> HabitRead:
-    h = await _get_or_404(session, habit_id)
+    h = await _get_or_404(session, habit_id, user_id)
     data = payload.model_dump(exclude_unset=True, by_alias=False)
     for k, v in data.items():
         setattr(h, k, v)
@@ -108,15 +123,19 @@ async def update_habit(
 
 
 @router.delete("/{habit_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def archive_habit(habit_id: int, session: Session) -> None:
-    h = await _get_or_404(session, habit_id)
+async def archive_habit(
+    habit_id: int, session: Session, user_id: CurrentUser
+) -> None:
+    h = await _get_or_404(session, habit_id, user_id)
     h.archived_at = datetime.utcnow()
     await session.commit()
 
 
 @router.post("/{habit_id}/restore", response_model=HabitRead)
-async def restore_habit(habit_id: int, session: Session) -> HabitRead:
-    h = await _get_or_404(session, habit_id)
+async def restore_habit(
+    habit_id: int, session: Session, user_id: CurrentUser
+) -> HabitRead:
+    h = await _get_or_404(session, habit_id, user_id)
     h.archived_at = None
     await session.commit()
     await session.refresh(h, attribute_names=["completions"])
@@ -125,19 +144,20 @@ async def restore_habit(habit_id: int, session: Session) -> HabitRead:
 
 @router.post("/reorder", response_model=list[HabitRead])
 async def reorder_habits(
-    items: list[ReorderItem], session: Session
+    items: list[ReorderItem], session: Session, user_id: CurrentUser
 ) -> list[HabitRead]:
     ids = [i.id for i in items]
-    res = await session.execute(select(Habit).where(Habit.id.in_(ids)))
+    res = await session.execute(
+        select(Habit).where(Habit.id.in_(ids), Habit.user_id == user_id)
+    )
     by_id = {h.id: h for h in res.scalars().unique().all()}
     for item in items:
         if item.id in by_id:
             by_id[item.id].sort_order = item.sort_order
     await session.commit()
-    # return fresh list
     res = await session.execute(
         select(Habit)
-        .where(Habit.archived_at.is_(None))
+        .where(Habit.user_id == user_id, Habit.archived_at.is_(None))
         .order_by(Habit.sort_order, Habit.id)
     )
     return [_to_read(h) for h in res.scalars().unique().all()]

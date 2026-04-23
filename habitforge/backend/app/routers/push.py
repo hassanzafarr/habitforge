@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session
+from app.deps import CurrentUser
 from app.models import PushSubscription
 from app.schemas import (
     PushPublicKey,
@@ -56,8 +57,10 @@ async def public_key() -> PushPublicKey:
 
 
 @router.get("/status", response_model=PushStatus)
-async def status_push(session: Session) -> PushStatus:
-    res = await session.execute(select(PushSubscription.id))
+async def status_push(session: Session, user_id: CurrentUser) -> PushStatus:
+    res = await session.execute(
+        select(PushSubscription.id).where(PushSubscription.user_id == user_id)
+    )
     count = len(res.scalars().all())
     return PushStatus(enabled=_vapid_ready(), count=count)
 
@@ -66,6 +69,7 @@ async def status_push(session: Session) -> PushStatus:
 async def subscribe_push(
     payload: PushSubscriptionIn,
     session: Session,
+    user_id: CurrentUser,
     user_agent: Annotated[str | None, Header()] = None,
 ) -> None:
     expiration_dt = None
@@ -79,6 +83,7 @@ async def subscribe_push(
     existing = res.scalars().one_or_none()
 
     if existing:
+        existing.user_id = user_id
         existing.p256dh = payload.keys.p256dh
         existing.auth = payload.keys.auth
         existing.expiration_time = expiration_dt
@@ -86,6 +91,7 @@ async def subscribe_push(
     else:
         session.add(
             PushSubscription(
+                user_id=user_id,
                 endpoint=payload.endpoint,
                 p256dh=payload.keys.p256dh,
                 auth=payload.keys.auth,
@@ -99,10 +105,14 @@ async def subscribe_push(
 @router.delete("/unsubscribe", status_code=status.HTTP_204_NO_CONTENT)
 async def unsubscribe_push(
     session: Session,
+    user_id: CurrentUser,
     endpoint: str = Query(...),
 ) -> None:
     res = await session.execute(
-        select(PushSubscription).where(PushSubscription.endpoint == endpoint)
+        select(PushSubscription).where(
+            PushSubscription.endpoint == endpoint,
+            PushSubscription.user_id == user_id,
+        )
     )
     sub = res.scalars().one_or_none()
     if sub is None:
@@ -115,6 +125,7 @@ async def unsubscribe_push(
 async def send_test_notification(
     payload: PushTestNotification,
     session: Session,
+    user_id: CurrentUser,
 ) -> dict:
     try:
         from pywebpush import WebPushException, webpush
@@ -137,7 +148,9 @@ async def send_test_notification(
             detail="Invalid HABITFORGE_VAPID_SUBJECT. Use mailto:you@example.com or https://your-domain.com.",
         )
 
-    res = await session.execute(select(PushSubscription))
+    res = await session.execute(
+        select(PushSubscription).where(PushSubscription.user_id == user_id)
+    )
     subs = res.scalars().all()
     if not subs:
         return {"sent": 0, "removed": 0, "total": 0}

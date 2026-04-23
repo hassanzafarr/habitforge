@@ -1,8 +1,15 @@
-"""Seed DB with 4 sample habits + 60 days of realistic completions."""
+"""Seed DB with 4 sample habits + 60 days of realistic completions.
+
+Usage:
+  python seed.py <clerk_user_id>
+
+You can find your Clerk user ID in the Clerk dashboard (starts with "user_").
+"""
 from __future__ import annotations
 
 import asyncio
 import random
+import sys
 from datetime import date, datetime, timedelta
 
 from sqlalchemy import delete
@@ -60,11 +67,11 @@ SAMPLES = [
 ]
 
 
-async def main() -> None:
+async def main(user_id: str) -> None:
     await init_db()
     async with SessionLocal() as session:
         await session.execute(delete(Completion))
-        await session.execute(delete(Habit))
+        await session.execute(delete(Habit).where(Habit.user_id == user_id))
         await session.commit()
 
         today = date.today()
@@ -72,6 +79,7 @@ async def main() -> None:
         for cfg in SAMPLES:
             consistency = cfg.pop("consistency")
             h = Habit(
+                user_id=user_id,
                 created_at=datetime.utcnow() - timedelta(days=60),
                 **cfg,
             )
@@ -101,8 +109,11 @@ async def main() -> None:
                         )
                     )
         await session.commit()
-        print("Seeded 4 habits with ~60 days of completions.")
+        print(f"Seeded 4 habits with ~60 days of completions for user {user_id}.")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    if len(sys.argv) < 2:
+        print("Usage: python seed.py <clerk_user_id>", file=sys.stderr)
+        sys.exit(1)
+    asyncio.run(main(sys.argv[1]))

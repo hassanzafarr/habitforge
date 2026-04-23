@@ -20,11 +20,22 @@ import type {
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
+type TokenGetter = () => Promise<string | null>;
+let getAuthToken: TokenGetter = async () => null;
+
+export function setAuthTokenGetter(getter: TokenGetter) {
+  getAuthToken = getter;
+}
+
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...init,
-  });
+  const token = await getAuthToken();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...((init?.headers as Record<string, string>) || {}),
+  };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`${BASE}${path}`, { ...init, headers });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(`${res.status} ${res.statusText} ${text}`);

@@ -31,6 +31,9 @@ async def client():
     importlib.reload(r_completions)
     importlib.reload(main)
 
+    from app.deps import get_current_user_id
+    main.app.dependency_overrides[get_current_user_id] = lambda: "user_test"
+
     async with main.app.router.lifespan_context(main.app):
         transport = ASGITransport(app=main.app)
         async with AsyncClient(transport=transport, base_url="http://test") as c:

@@ -40,6 +40,7 @@ class Habit(Base):
     __tablename__ = "habits"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(60), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String(280), default=None)
     icon: Mapped[str] = mapped_column(String(16), default="🎯")
@@ -90,6 +91,7 @@ class Todo(Base):
     __tablename__ = "todos"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(120), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String(500), default=None)
     completed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
@@ -105,6 +107,7 @@ class Note(Base):
     __tablename__ = "notes"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     content: Mapped[str] = mapped_column(Text, default="", nullable=False)
     tags: Mapped[Optional[list]] = mapped_column(JSON, default=None)
@@ -123,6 +126,7 @@ class PushSubscription(Base):
     __tablename__ = "push_subscriptions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     endpoint: Mapped[str] = mapped_column(String(500), unique=True, nullable=False)
     p256dh: Mapped[str] = mapped_column(String(200), nullable=False)
     auth: Mapped[str] = mapped_column(String(200), nullable=False)
