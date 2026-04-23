@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { LayoutDashboard, ListChecks, CheckSquare, NotebookPen, Sun, Moon } from "lucide-react";
 import { useState, useEffect } from "react";
+import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/react";
 import { cn } from "@/lib/utils";
 
 function ThemeToggle() {
@@ -73,7 +74,24 @@ export function Navbar() {
           ))}
         </nav>
 
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Show when="signed-out">
+            <SignInButton mode="modal">
+              <button className="rounded-md px-3 py-1.5 text-sm font-medium text-muted hover:text-ink hover:bg-neutral-100 dark:hover:bg-neutral-800 dark:hover:text-white transition-colors">
+                Sign in
+              </button>
+            </SignInButton>
+            <SignUpButton mode="modal">
+              <button className="rounded-md bg-ink px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 dark:bg-white dark:text-ink transition-opacity">
+                Sign up
+              </button>
+            </SignUpButton>
+          </Show>
+          <Show when="signed-in">
+            <UserButton afterSignOutUrl="/" />
+          </Show>
+        </div>
       </div>
     </header>
   );
