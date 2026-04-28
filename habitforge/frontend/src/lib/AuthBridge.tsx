@@ -29,8 +29,21 @@ export function AuthBridge({ children }: { children: React.ReactNode }) {
     registered.current = true;
   }
 
+  // Track previous user so we only clear the cache on actual user changes
+  // (sign-out or different account), not on the initial auth state settling.
+  const prevUserIdRef = useRef<string | null | undefined>(undefined);
   useEffect(() => {
-    qc.clear();
+    // Skip the very first run (initial mount / auth loading).
+    if (prevUserIdRef.current === undefined) {
+      prevUserIdRef.current = userId ?? null;
+      return;
+    }
+    // Only clear when the user truly changed.
+    const prev = prevUserIdRef.current;
+    prevUserIdRef.current = userId ?? null;
+    if (prev !== (userId ?? null)) {
+      qc.clear();
+    }
   }, [userId, isSignedIn, qc]);
 
   return <>{children}</>;
