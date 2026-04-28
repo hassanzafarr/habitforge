@@ -29,19 +29,18 @@ export function AuthBridge({ children }: { children: React.ReactNode }) {
     registered.current = true;
   }
 
-  // Track previous user so we only clear the cache on actual user changes
-  // (sign-out or different account), not on the initial auth state settling.
+  // Clear the React-Query cache ONLY when switching away from an
+  // authenticated user (sign-out or different account).  Never clear on the
+  // initial auth settling (undefined/null → real userId) because that would
+  // wipe queries that child components just started (effects run child→parent).
   const prevUserIdRef = useRef<string | null | undefined>(undefined);
   useEffect(() => {
-    // Skip the very first run (initial mount / auth loading).
-    if (prevUserIdRef.current === undefined) {
-      prevUserIdRef.current = userId ?? null;
-      return;
-    }
-    // Only clear when the user truly changed.
+    const current = userId ?? null;
     const prev = prevUserIdRef.current;
-    prevUserIdRef.current = userId ?? null;
-    if (prev !== (userId ?? null)) {
+    prevUserIdRef.current = current;
+
+    // Only clear when a *real* previous user existed and the identity changed.
+    if (prev && prev !== current) {
       qc.clear();
     }
   }, [userId, isSignedIn, qc]);
