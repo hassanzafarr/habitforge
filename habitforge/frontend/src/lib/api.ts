@@ -2,6 +2,7 @@ import type {
   Completion,
   CompletionStatus,
   DashboardSummary,
+  GeneratedTodo,
   Habit,
   HabitCreate,
   HabitUpdate,
@@ -90,6 +91,11 @@ export const api = {
     req<Todo>(`/todos/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   deleteTodo: (id: number) =>
     req<void>(`/todos/${id}`, { method: "DELETE" }),
+  generateTodos: (prompt: string) =>
+    req<GeneratedTodo[]>("/ai/generate-todos", {
+      method: "POST",
+      body: JSON.stringify({ prompt }),
+    }),
 
   // ── Notes ──────────────────────────────────────────────────────────────
   listNotes: (params?: { q?: string; tag?: string; habitId?: number }) => {
