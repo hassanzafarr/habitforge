@@ -87,6 +87,12 @@ export interface TodoCreate {
 
 export type TodoUpdate = Partial<TodoCreate> & { completed?: boolean };
 
+export interface GeneratedTodo {
+  title: string;
+  description: string | null;
+  priority: TodoPriority;
+}
+
 export interface Note {
   id: number;
   title: string;
