@@ -1,5 +1,9 @@
 {
+  "scripts": {
+    "dev": "concurrently --names \"backend,frontend\" --prefix-colors \"cyan,magenta\" \"cd backend && python -m uvicorn app.main:app --reload --port 8000\" \"cd frontend && npm run dev\""
+  },
   "dependencies": {
-    "@clerk/react": "^6.4.3"
+    "@clerk/react": "^6.4.3",
+    "concurrently": "^9.0.0"
   }
 }

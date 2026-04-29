@@ -21,14 +21,14 @@ export function Modal({ open, onClose, title, children }: Props) {
       {open && (
         <>
           <motion.div
-            className="fixed inset-0 z-40 bg-ink/30 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-ink/30 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
           />
           <motion.div
-            className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center pointer-events-none overflow-y-auto overscroll-contain"
+            className="fixed inset-0 z-[60] flex items-end sm:items-center sm:justify-center pointer-events-none overflow-y-auto overscroll-contain"
             initial={{ opacity: 0, y: 8, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.98 }}
