@@ -33,11 +33,22 @@ export function DashboardPage() {
           <p className="text-sm text-muted mt-0.5">{today}</p>
         </div>
         {/* Only shown on desktop — mobile uses FAB in bottom nav */}
-        <Button onClick={() => setShowCreate(true)} size="md" className="hidden md:flex">
-          <Plus size={15} />
-          New Habit
-          <span className="hidden sm:inline ml-1 text-xs opacity-60 font-mono">N</span>
-        </Button>
+        <div className="hidden md:flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={() => {
+              throw new Error("Frontend Sentry test");
+            }}
+          >
+            Test Sentry
+          </Button>
+          <Button onClick={() => setShowCreate(true)} size="md">
+            <Plus size={15} />
+            New Habit
+            <span className="hidden sm:inline ml-1 text-xs opacity-60 font-mono">N</span>
+          </Button>
+        </div>
       </div>
 
       {/* Stat cards */}
