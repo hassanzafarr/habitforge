@@ -1,16 +1,41 @@
 from __future__ import annotations
 
 import logging
+import os
 from contextlib import asynccontextmanager
 
+import sentry_sdk
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.starlette import StarletteIntegration
 
 from app.database import init_db
 from app.routers import ai, completions, habits, notes, push, todos
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("habitforge")
+
+
+def _env_float(name: str, default: float) -> float:
+    try:
+        return float(os.getenv(name, default))
+    except (TypeError, ValueError):
+        return default
+
+
+if sentry_dsn := os.getenv("HABITFORGE_SENTRY_DSN"):
+    sentry_sdk.init(
+        dsn=sentry_dsn,
+        environment=os.getenv("HABITFORGE_SENTRY_ENVIRONMENT", "development"),
+        release=os.getenv("HABITFORGE_SENTRY_RELEASE"),
+        traces_sample_rate=_env_float("HABITFORGE_SENTRY_TRACES_SAMPLE_RATE", 0.1),
+        send_default_pii=False,
+        integrations=[
+            StarletteIntegration(failed_request_status_codes=[range(500, 599)]),
+            FastApiIntegration(failed_request_status_codes=[range(500, 599)]),
+        ],
+    )
 
 
 @asynccontextmanager

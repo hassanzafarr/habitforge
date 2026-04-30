@@ -6,6 +6,7 @@ from typing import Annotated, Any
 
 import httpx
 import jwt
+import sentry_sdk
 from fastapi import Depends, Header, HTTPException, status
 from jwt import PyJWKClient
 
@@ -72,6 +73,7 @@ async def get_current_user_id(
         )
     token = authorization.split(" ", 1)[1].strip()
     claims = _verify_token(token)
+    sentry_sdk.set_user({"id": claims["sub"]})
     return claims["sub"]
 
 

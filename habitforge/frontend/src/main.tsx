@@ -6,6 +6,7 @@ import { Toaster } from "sonner";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { ClerkProvider } from "@clerk/react";
 import { AuthBridge } from "./lib/AuthBridge";
+import { Sentry } from "./lib/sentry";
 import App from "./App";
 import "./index.css";
 
@@ -31,7 +32,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <QueryClientProvider client={queryClient}>
         <AuthBridge>
           <BrowserRouter>
-            <App />
+            <Sentry.ErrorBoundary fallback={<div className="p-6 text-sm text-muted">Something went wrong.</div>}>
+              <App />
+            </Sentry.ErrorBoundary>
             <Toaster richColors position="bottom-right" />
             <SpeedInsights />
           </BrowserRouter>

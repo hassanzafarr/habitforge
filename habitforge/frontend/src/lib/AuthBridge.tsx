@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useAuth } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { setAuthTokenGetter } from "./api";
+import { Sentry } from "./sentry";
 
 /**
  * Wires Clerk's session token into the api fetch wrapper and clears the
@@ -38,6 +39,8 @@ export function AuthBridge({ children }: { children: React.ReactNode }) {
     const current = userId ?? null;
     const prev = prevUserIdRef.current;
     prevUserIdRef.current = current;
+
+    Sentry.setUser(current ? { id: current } : null);
 
     // Only clear when a *real* previous user existed and the identity changed.
     if (prev && prev !== current) {
