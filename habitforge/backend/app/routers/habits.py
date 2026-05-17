@@ -33,6 +33,7 @@ def _to_read(h: Habit, as_of: date | None = None) -> HabitRead:
         "frequency_type": h.frequency_type,
         "target_per_week": h.target_per_week,
         "active_days": h.active_days or [],
+        "habit_type": getattr(h, "habit_type", "positive"),
         "created_at": h.created_at,
         "archived_at": h.archived_at,
         "sort_order": h.sort_order,
@@ -41,6 +42,11 @@ def _to_read(h: Habit, as_of: date | None = None) -> HabitRead:
         "longest_streak": info.longest_streak,
         "completion_rate_30d": info.completion_rate_30d,
         "total_completions": info.total_completions,
+        "reminder_enabled": getattr(h, "reminder_enabled", False),
+        "reminder_deadline": getattr(h, "reminder_deadline", None),
+        "reminder_timezone": getattr(h, "reminder_timezone", "UTC"),
+        "reminder_max_per_day": getattr(h, "reminder_max_per_day", 2),
+        "streak_risk_threshold": getattr(h, "streak_risk_threshold", 3),
     }
     return HabitRead.model_validate(data)
 
@@ -80,7 +86,13 @@ async def create_habit(
         frequency_type=payload.frequency_type,
         target_per_week=payload.target_per_week,
         active_days=payload.active_days,
+        habit_type=payload.habit_type,
         sort_order=next_order,
+        reminder_enabled=payload.reminder_enabled,
+        reminder_deadline=payload.reminder_deadline,
+        reminder_timezone=payload.reminder_timezone,
+        reminder_max_per_day=payload.reminder_max_per_day,
+        streak_risk_threshold=payload.streak_risk_threshold,
     )
     session.add(h)
     await session.commit()

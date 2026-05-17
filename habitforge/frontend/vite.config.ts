@@ -44,10 +44,15 @@ export default defineConfig({
     }),
   ],
   resolve: {
-    alias: { "@": path.resolve(__dirname, "src") },
+    alias: {
+      "@": path.resolve(__dirname, "src"),
+      ...(process.env.VITE_MOCK_CLERK === "1"
+        ? { "@clerk/react": path.resolve(__dirname, "src/test/mocks/clerk-react.tsx") }
+        : {}),
+    },
   },
   server: {
-    port: 5173,
+    port: 5174,
     proxy: {
       "/api": "http://localhost:8000",
     },

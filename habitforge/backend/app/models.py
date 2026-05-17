@@ -56,6 +56,13 @@ class Habit(Base):
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     habit_type: Mapped[str] = mapped_column(String(20), default="positive", nullable=False)
 
+    # Reminder configuration
+    reminder_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    reminder_deadline: Mapped[Optional[str]] = mapped_column(String(5), default=None)
+    reminder_timezone: Mapped[str] = mapped_column(String(64), default="UTC", nullable=False)
+    reminder_max_per_day: Mapped[int] = mapped_column(Integer, default=2, nullable=False)
+    streak_risk_threshold: Mapped[int] = mapped_column(Integer, default=3, nullable=False)
+
     completions: Mapped[list["Completion"]] = relationship(
         back_populates="habit",
         cascade="all, delete-orphan",
@@ -120,6 +127,27 @@ class Note(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=_utcnow, onupdate=_utcnow, nullable=False
     )
+
+
+class ReminderKind(str, enum.Enum):
+    deadline = "deadline"
+    streak_risk = "streak_risk"
+    snoozed = "snoozed"
+
+
+class ReminderLog(Base):
+    __tablename__ = "reminder_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    habit_id: Mapped[int] = mapped_column(
+        ForeignKey("habits.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    user_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    fired_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow, nullable=False, index=True)
+    kind: Mapped[ReminderKind] = mapped_column(
+        Enum(ReminderKind), default=ReminderKind.deadline, nullable=False
+    )
+    snoozed_until: Mapped[Optional[datetime]] = mapped_column(DateTime, default=None)
 
 
 class PushSubscription(Base):

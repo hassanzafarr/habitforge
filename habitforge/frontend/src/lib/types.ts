@@ -20,6 +20,11 @@ export interface Habit {
   longestStreak: number;
   completionRate30d: number;
   totalCompletions: number;
+  reminderEnabled: boolean;
+  reminderDeadline: string | null;
+  reminderTimezone: string;
+  reminderMaxPerDay: number;
+  streakRiskThreshold: number;
 }
 
 export interface Completion {
@@ -61,6 +66,11 @@ export interface HabitCreate {
   targetPerWeek?: number;
   activeDays?: number[];
   habitType?: HabitType;
+  reminderEnabled?: boolean;
+  reminderDeadline?: string | null;
+  reminderTimezone?: string;
+  reminderMaxPerDay?: number;
+  streakRiskThreshold?: number;
 }
 
 export type HabitUpdate = Partial<HabitCreate> & { sortOrder?: number };

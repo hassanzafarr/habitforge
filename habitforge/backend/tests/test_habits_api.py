@@ -1,48 +1,9 @@
 from __future__ import annotations
 
-import os
-import tempfile
 from datetime import date
 
 import pytest
-import pytest_asyncio
-from httpx import ASGITransport, AsyncClient
-
-
-@pytest_asyncio.fixture
-async def client():
-    # fresh db per test
-    fd, path = tempfile.mkstemp(suffix=".db")
-    os.close(fd)
-    os.environ["HABITFORGE_DB_URL"] = f"sqlite+aiosqlite:///{path}"
-
-    # re-import after env var set
-    import importlib
-
-    from app import database, models, main
-    from app.routers import completions as r_completions
-    from app.routers import habits as r_habits
-    from app.services import streak as r_streak
-
-    importlib.reload(database)
-    importlib.reload(models)
-    importlib.reload(r_streak)
-    importlib.reload(r_habits)
-    importlib.reload(r_completions)
-    importlib.reload(main)
-
-    from app.deps import get_current_user_id
-    main.app.dependency_overrides[get_current_user_id] = lambda: "user_test"
-
-    async with main.app.router.lifespan_context(main.app):
-        transport = ASGITransport(app=main.app)
-        async with AsyncClient(transport=transport, base_url="http://test") as c:
-            yield c
-
-    try:
-        os.remove(path)
-    except OSError:
-        pass
+from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
@@ -97,6 +58,46 @@ async def test_archive_and_restore(client: AsyncClient):
     r = await client.post(f"/api/habits/{hid}/restore")
     assert r.status_code == 200
     assert r.json()["archivedAt"] is None
+
+
+@pytest.mark.asyncio
+async def test_reminder_fields_roundtrip(client: AsyncClient):
+    r = await client.post(
+        "/api/habits",
+        json={
+            "name": "Gym",
+            "reminderEnabled": True,
+            "reminderDeadline": "20:00",
+            "reminderTimezone": "Asia/Karachi",
+            "reminderMaxPerDay": 3,
+            "streakRiskThreshold": 5,
+        },
+    )
+    assert r.status_code == 201, r.text
+    h = r.json()
+    assert h["reminderEnabled"] is True
+    assert h["reminderDeadline"] == "20:00"
+    assert h["reminderTimezone"] == "Asia/Karachi"
+    assert h["reminderMaxPerDay"] == 3
+    assert h["streakRiskThreshold"] == 5
+
+    # update
+    r = await client.patch(
+        f"/api/habits/{h['id']}",
+        json={"reminderDeadline": "21:30", "reminderEnabled": False},
+    )
+    assert r.status_code == 200
+    assert r.json()["reminderDeadline"] == "21:30"
+    assert r.json()["reminderEnabled"] is False
+
+
+@pytest.mark.asyncio
+async def test_reminder_deadline_validation(client: AsyncClient):
+    r = await client.post(
+        "/api/habits",
+        json={"name": "Bad", "reminderDeadline": "25:99"},
+    )
+    assert r.status_code == 422
 
 
 @pytest.mark.asyncio

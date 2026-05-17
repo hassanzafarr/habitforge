@@ -125,6 +125,21 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body ?? {}),
     }),
+  snoozeHabit: (habitId: number, minutes = 30) =>
+    req<{ status: string; until: string }>(`/push/habits/${habitId}/snooze`, {
+      method: "POST",
+      body: JSON.stringify({ minutes }),
+    }),
+  pushAction: (body: {
+    habitId: number;
+    action: "done" | "snooze" | "skip";
+    date?: string;
+    snoozeMinutes?: number;
+  }) =>
+    req<{ status: string; until?: string }>("/push/action", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 };
 
 export const qk = {

@@ -20,6 +20,9 @@ CLERK_JWKS_URL = os.getenv("HABITFORGE_CLERK_JWKS_URL") or (
 )
 # Optional: restrict tokens to a specific authorized party (your frontend origin).
 CLERK_AUTHORIZED_PARTY = os.getenv("HABITFORGE_CLERK_AUTHORIZED_PARTY")
+TEST_MODE = os.getenv("HABITFORGE_TEST_MODE") == "1"
+TEST_AUTH_TOKEN = "habitforge-e2e-token"
+TEST_USER_ID = "habitforge-e2e-user"
 
 _jwks_client: PyJWKClient | None = None
 
@@ -72,6 +75,13 @@ async def get_current_user_id(
             headers={"WWW-Authenticate": "Bearer"},
         )
     token = authorization.split(" ", 1)[1].strip()
+    if TEST_MODE:
+        if token == TEST_AUTH_TOKEN:
+            sentry_sdk.set_user({"id": TEST_USER_ID})
+            return TEST_USER_ID
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid test token"
+        )
     claims = _verify_token(token)
     sentry_sdk.set_user({"id": claims["sub"]})
     return claims["sub"]

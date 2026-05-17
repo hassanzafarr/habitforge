@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date as Date, datetime
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -28,6 +28,13 @@ class HabitBase(CamelModel):
     target_per_week: int = Field(default=7, ge=1, le=7)
     active_days: list[int] = Field(default_factory=list)
     habit_type: str = "positive"
+    reminder_enabled: bool = False
+    reminder_deadline: Optional[str] = Field(
+        default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$"
+    )
+    reminder_timezone: str = "UTC"
+    reminder_max_per_day: int = Field(default=2, ge=1, le=10)
+    streak_risk_threshold: int = Field(default=3, ge=1, le=365)
 
 
 class HabitCreate(HabitBase):
@@ -44,6 +51,13 @@ class HabitUpdate(CamelModel):
     active_days: Optional[list[int]] = None
     sort_order: Optional[int] = None
     habit_type: Optional[str] = None
+    reminder_enabled: Optional[bool] = None
+    reminder_deadline: Optional[str] = Field(
+        default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$"
+    )
+    reminder_timezone: Optional[str] = None
+    reminder_max_per_day: Optional[int] = Field(default=None, ge=1, le=10)
+    streak_risk_threshold: Optional[int] = Field(default=None, ge=1, le=365)
 
 
 class HabitRead(HabitBase):
@@ -64,7 +78,7 @@ class ReorderItem(CamelModel):
 
 
 class CompletionIn(CamelModel):
-    date: date
+    date: Date
     status: CompletionStatus = CompletionStatus.done
     note: Optional[str] = Field(default=None, max_length=500)
 
@@ -72,20 +86,20 @@ class CompletionIn(CamelModel):
 class CompletionRead(CamelModel):
     id: int
     habit_id: int
-    date: date
+    date: Date
     status: CompletionStatus
     note: Optional[str] = None
     created_at: datetime
 
 
 class HeatmapCell(CamelModel):
-    date: date
+    date: Date
     count: int
     total: int
 
 
 class TrendPoint(CamelModel):
-    date: date
+    date: Date
     rate: float
 
 
@@ -105,7 +119,7 @@ class TodoBase(CamelModel):
     title: str = Field(min_length=1, max_length=120)
     description: Optional[str] = Field(default=None, max_length=500)
     priority: TodoPriority = TodoPriority.medium
-    due_date: Optional[date] = None
+    due_date: Optional[Date] = None
 
 
 class TodoCreate(TodoBase):
@@ -116,7 +130,7 @@ class TodoUpdate(CamelModel):
     title: Optional[str] = Field(default=None, min_length=1, max_length=120)
     description: Optional[str] = Field(default=None, max_length=500)
     priority: Optional[TodoPriority] = None
-    due_date: Optional[date] = None
+    due_date: Optional[Date] = None
     completed: Optional[bool] = None
 
 
@@ -181,3 +195,14 @@ class PushTestNotification(CamelModel):
     title: str = "Habit reminder"
     body: str = "You still have habits due today."
     url: str = "/"
+
+
+class SnoozeIn(CamelModel):
+    minutes: int = Field(default=30, ge=1, le=24 * 60)
+
+
+class PushActionIn(CamelModel):
+    habit_id: int
+    action: str = Field(pattern=r"^(done|snooze|skip)$")
+    date: Optional[Date] = None
+    snooze_minutes: int = Field(default=30, ge=1, le=24 * 60)

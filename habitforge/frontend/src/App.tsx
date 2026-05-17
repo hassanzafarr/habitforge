@@ -10,10 +10,12 @@ import { TodosPage } from "@/pages/TodosPage";
 import { NotesPage } from "@/pages/NotesPage";
 import { LandingPage } from "@/pages/LandingPage";
 import { useKeyboardShortcuts } from "@/lib/useKeyboardShortcuts";
+import { usePushActionBridge } from "@/lib/usePushActionBridge";
 import { HabitForm } from "@/features/habits/HabitForm";
 
 export default function App() {
   useKeyboardShortcuts();
+  usePushActionBridge();
   const [showCreate, setShowCreate] = useState(false);
 
   return (

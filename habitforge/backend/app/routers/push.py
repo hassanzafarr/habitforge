@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import json
 import logging
-import os
-from datetime import datetime
+from datetime import date as date_cls, datetime, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
@@ -12,12 +10,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session
 from app.deps import CurrentUser
-from app.models import PushSubscription
+from app.models import Habit, PushSubscription, ReminderKind, ReminderLog
 from app.schemas import (
+    PushActionIn,
     PushPublicKey,
     PushStatus,
     PushSubscriptionIn,
     PushTestNotification,
+    SnoozeIn,
+)
+from app.services.push_sender import (
+    normalize_vapid_subject,
+    send_to_user,
+    vapid_config,
+    vapid_ready,
 )
 
 router = APIRouter(prefix="/push", tags=["push"])
@@ -25,29 +31,9 @@ log = logging.getLogger("habitforge.push")
 Session = Annotated[AsyncSession, Depends(get_session)]
 
 
-def _vapid_config() -> tuple[str | None, str | None, str]:
-    return (
-        os.getenv("HABITFORGE_VAPID_PUBLIC_KEY"),
-        os.getenv("HABITFORGE_VAPID_PRIVATE_KEY"),
-        os.getenv("HABITFORGE_VAPID_SUBJECT", "mailto:admin@example.com"),
-    )
-
-
-def _normalize_vapid_subject(subject: str) -> str:
-    s = (subject or "").strip()
-    if not s:
-        return ""
-    if s.startswith("mailto:") or s.startswith("https://"):
-        return s
-    # Common mistake: plain email provided without mailto:
-    if "@" in s and " " not in s and ":" not in s:
-        return f"mailto:{s}"
-    return s
-
-
-def _vapid_ready() -> bool:
-    public_key, private_key, _subject = _vapid_config()
-    return bool(public_key and private_key)
+_vapid_config = vapid_config
+_normalize_vapid_subject = normalize_vapid_subject
+_vapid_ready = vapid_ready
 
 
 @router.get("/public-key", response_model=PushPublicKey)
@@ -127,65 +113,102 @@ async def send_test_notification(
     session: Session,
     user_id: CurrentUser,
 ) -> dict:
-    try:
-        from pywebpush import WebPushException, webpush
-    except ModuleNotFoundError as exc:
-        raise HTTPException(
-            status_code=500,
-            detail="pywebpush is not installed. Install backend dependencies to enable push sending.",
-        ) from exc
-
     public_key, private_key, subject = _vapid_config()
     if not public_key or not private_key:
         raise HTTPException(
             status_code=400,
             detail="VAPID keys are not configured. Set HABITFORGE_VAPID_PUBLIC_KEY and HABITFORGE_VAPID_PRIVATE_KEY.",
         )
-    subject = _normalize_vapid_subject(subject)
-    if not (subject.startswith("mailto:") or subject.startswith("https://")):
+    subject_norm = _normalize_vapid_subject(subject)
+    if not (subject_norm.startswith("mailto:") or subject_norm.startswith("https://")):
         raise HTTPException(
             status_code=400,
             detail="Invalid HABITFORGE_VAPID_SUBJECT. Use mailto:you@example.com or https://your-domain.com.",
         )
 
-    res = await session.execute(
-        select(PushSubscription).where(PushSubscription.user_id == user_id)
+    result = await send_to_user(
+        session,
+        user_id,
+        {"title": payload.title, "body": payload.body, "url": payload.url},
     )
-    subs = res.scalars().all()
-    if not subs:
-        return {"sent": 0, "removed": 0, "total": 0}
+    return {"sent": result.sent, "removed": result.removed, "total": result.total}
 
-    sent = 0
-    removed = 0
-    expired: list[PushSubscription] = []
-    data = json.dumps({"title": payload.title, "body": payload.body, "url": payload.url})
 
-    for sub in subs:
-        try:
-            webpush(
-                subscription_info={
-                    "endpoint": sub.endpoint,
-                    "keys": {"p256dh": sub.p256dh, "auth": sub.auth},
-                },
-                data=data,
-                vapid_private_key=private_key,
-                vapid_claims={"sub": subject},
+async def _verify_habit_ownership(
+    session: AsyncSession, habit_id: int, user_id: str
+) -> Habit:
+    res = await session.execute(
+        select(Habit).where(Habit.id == habit_id, Habit.user_id == user_id)
+    )
+    h = res.scalars().unique().one_or_none()
+    if h is None:
+        raise HTTPException(status_code=404, detail="Habit not found")
+    return h
+
+
+@router.post("/action", status_code=status.HTTP_200_OK)
+async def push_action(
+    payload: PushActionIn,
+    session: Session,
+    user_id: CurrentUser,
+) -> dict:
+    """Handle notification button clicks from the service worker."""
+    habit = await _verify_habit_ownership(session, payload.habit_id, user_id)
+    target_date = payload.date or date_cls.today()
+
+    if payload.action == "snooze":
+        snoozed_until = datetime.utcnow() + timedelta(minutes=payload.snooze_minutes)
+        session.add(
+            ReminderLog(
+                habit_id=habit.id,
+                user_id=user_id,
+                kind=ReminderKind.snoozed,
+                snoozed_until=snoozed_until,
             )
-            sent += 1
-        except WebPushException as exc:
-            status_code = getattr(exc.response, "status_code", None)
-            if status_code in (404, 410):
-                expired.append(sub)
-                removed += 1
-            else:
-                log.warning("Push send failed for endpoint %s: %s", sub.endpoint, exc)
-        except Exception as exc:
-            log.exception("Push send failed due to invalid VAPID config or unexpected error.")
-            raise HTTPException(status_code=400, detail=f"Push send failed: {exc}") from exc
-
-    for sub in expired:
-        await session.delete(sub)
-    if expired:
+        )
         await session.commit()
+        return {"status": "snoozed", "until": snoozed_until.isoformat()}
 
-    return {"sent": sent, "removed": removed, "total": len(subs)}
+    if payload.action in ("done", "skip"):
+        from app.models import Completion, CompletionStatus
+
+        res = await session.execute(
+            select(Completion).where(
+                Completion.habit_id == habit.id, Completion.date == target_date
+            )
+        )
+        existing = res.scalars().one_or_none()
+        new_status = (
+            CompletionStatus.done if payload.action == "done" else CompletionStatus.skipped
+        )
+        if existing:
+            existing.status = new_status
+        else:
+            session.add(
+                Completion(habit_id=habit.id, date=target_date, status=new_status)
+            )
+        await session.commit()
+        return {"status": new_status.value}
+
+    raise HTTPException(status_code=400, detail="Unknown action")
+
+
+@router.post("/habits/{habit_id}/snooze", status_code=status.HTTP_200_OK)
+async def snooze_habit(
+    habit_id: int,
+    payload: SnoozeIn,
+    session: Session,
+    user_id: CurrentUser,
+) -> dict:
+    habit = await _verify_habit_ownership(session, habit_id, user_id)
+    snoozed_until = datetime.utcnow() + timedelta(minutes=payload.minutes)
+    session.add(
+        ReminderLog(
+            habit_id=habit.id,
+            user_id=user_id,
+            kind=ReminderKind.snoozed,
+            snoozed_until=snoozed_until,
+        )
+    )
+    await session.commit()
+    return {"status": "snoozed", "until": snoozed_until.isoformat()}

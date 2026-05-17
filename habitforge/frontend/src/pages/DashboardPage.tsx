@@ -34,15 +34,6 @@ export function DashboardPage() {
         </div>
         {/* Only shown on desktop — mobile uses FAB in bottom nav */}
         <div className="hidden md:flex items-center gap-2">
-          <Button
-            variant="secondary"
-            size="md"
-            onClick={() => {
-              throw new Error("Frontend Sentry test");
-            }}
-          >
-            Test Sentry
-          </Button>
           <Button onClick={() => setShowCreate(true)} size="md">
             <Plus size={15} />
             New Habit

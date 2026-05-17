@@ -20,6 +20,9 @@ htmlcov/
 .coverage
 .coverage.*
 coverage.xml
+coverage/
+playwright-report/
+test-results/
 *.log
 
 # Database files (do NOT commit the local dev DB)

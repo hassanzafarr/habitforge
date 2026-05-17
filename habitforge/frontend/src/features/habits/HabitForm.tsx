@@ -35,7 +35,17 @@ interface FormState {
   targetPerWeek: number;
   activeDays: number[];
   habitType: HabitType;
+  reminderEnabled: boolean;
+  reminderDeadline: string;
+  reminderTimezone: string;
+  reminderMaxPerDay: number;
+  streakRiskThreshold: number;
 }
+
+const DETECTED_TZ =
+  typeof Intl !== "undefined"
+    ? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+    : "UTC";
 
 const DEFAULT: FormState = {
   name: "",
@@ -46,6 +56,11 @@ const DEFAULT: FormState = {
   targetPerWeek: 3,
   activeDays: [1, 3, 5],
   habitType: "positive",
+  reminderEnabled: false,
+  reminderDeadline: "20:00",
+  reminderTimezone: DETECTED_TZ,
+  reminderMaxPerDay: 2,
+  streakRiskThreshold: 3,
 };
 
 function toFormState(h?: Habit): FormState {
@@ -59,6 +74,11 @@ function toFormState(h?: Habit): FormState {
     targetPerWeek: h.targetPerWeek,
     activeDays: h.activeDays,
     habitType: h.habitType ?? "positive",
+    reminderEnabled: h.reminderEnabled ?? false,
+    reminderDeadline: h.reminderDeadline ?? "20:00",
+    reminderTimezone: h.reminderTimezone || DETECTED_TZ,
+    reminderMaxPerDay: h.reminderMaxPerDay ?? 2,
+    streakRiskThreshold: h.streakRiskThreshold ?? 3,
   };
 }
 
@@ -121,6 +141,11 @@ export function HabitForm({ open, onClose, habit }: Props) {
       targetPerWeek: form.targetPerWeek,
       activeDays: form.frequencyType === "custom_days" ? form.activeDays : [],
       habitType: form.habitType,
+      reminderEnabled: form.reminderEnabled,
+      reminderDeadline: form.reminderEnabled ? form.reminderDeadline : null,
+      reminderTimezone: form.reminderTimezone || DETECTED_TZ,
+      reminderMaxPerDay: form.reminderMaxPerDay,
+      streakRiskThreshold: form.streakRiskThreshold,
     };
     isEdit ? updateMut.mutate(body) : createMut.mutate(body);
   };
@@ -301,6 +326,79 @@ export function HabitForm({ open, onClose, habit }: Props) {
                   {d}
                 </button>
               ))}
+            </div>
+          )}
+        </div>
+
+        {/* Reminders */}
+        <div className="rounded-lg border border-border p-3 dark:border-neutral-700">
+          <label className="flex cursor-pointer items-center justify-between gap-2">
+            <div>
+              <p className="text-sm font-medium text-ink dark:text-white">
+                Push reminders
+              </p>
+              <p className="text-xs text-muted">
+                Get a push if you haven't checked in by the deadline.
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              checked={form.reminderEnabled}
+              onChange={(e) => set("reminderEnabled", e.target.checked)}
+              className="h-4 w-4 accent-ink"
+            />
+          </label>
+
+          {form.reminderEnabled && (
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-medium text-muted">Deadline</span>
+                <input
+                  type="time"
+                  value={form.reminderDeadline}
+                  onChange={(e) => set("reminderDeadline", e.target.value)}
+                  className="h-9 rounded-md border border-border px-2 text-sm dark:bg-neutral-900 dark:border-neutral-700"
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-medium text-muted">Timezone</span>
+                <input
+                  type="text"
+                  value={form.reminderTimezone}
+                  onChange={(e) => set("reminderTimezone", e.target.value)}
+                  className="h-9 rounded-md border border-border px-2 text-sm dark:bg-neutral-900 dark:border-neutral-700"
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-medium text-muted">
+                  Max reminders/day
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={form.reminderMaxPerDay}
+                  onChange={(e) =>
+                    set("reminderMaxPerDay", Number(e.target.value) || 1)
+                  }
+                  className="h-9 rounded-md border border-border px-2 text-sm dark:bg-neutral-900 dark:border-neutral-700"
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-medium text-muted">
+                  Streak-risk threshold
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={form.streakRiskThreshold}
+                  onChange={(e) =>
+                    set("streakRiskThreshold", Number(e.target.value) || 1)
+                  }
+                  className="h-9 rounded-md border border-border px-2 text-sm dark:bg-neutral-900 dark:border-neutral-700"
+                />
+              </label>
             </div>
           )}
         </div>

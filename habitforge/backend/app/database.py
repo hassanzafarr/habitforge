@@ -39,8 +39,45 @@ async def get_session() -> AsyncIterator[AsyncSession]:
         yield session
 
 
+_HABIT_BACKFILL_COLUMNS: list[tuple[str, str]] = [
+    ("reminder_enabled", "BOOLEAN NOT NULL DEFAULT 0"),
+    ("reminder_deadline", "VARCHAR(5)"),
+    ("reminder_timezone", "VARCHAR(64) NOT NULL DEFAULT 'UTC'"),
+    ("reminder_max_per_day", "INTEGER NOT NULL DEFAULT 2"),
+    ("streak_risk_threshold", "INTEGER NOT NULL DEFAULT 3"),
+]
+
+
+def _backfill_habit_columns_sync(sync_conn) -> None:
+    """Add new reminder columns to existing `habits` table if missing.
+
+    Idempotent. Works on SQLite + Postgres (try/except on ALTER).
+    """
+    from sqlalchemy import text
+
+    is_sqlite = sync_conn.dialect.name == "sqlite"
+    for col_name, ddl in _HABIT_BACKFILL_COLUMNS:
+        try:
+            # Postgres supports IF NOT EXISTS on ADD COLUMN; SQLite needs probe.
+            if is_sqlite:
+                rows = sync_conn.execute(text("PRAGMA table_info(habits)")).fetchall()
+                cols = {r[1] for r in rows}
+                if col_name in cols:
+                    continue
+                # SQLite cannot ALTER with NOT NULL + no default in older versions;
+                # our defaults above are literal so this works.
+                pg_ddl = ddl
+                sync_conn.execute(text(f"ALTER TABLE habits ADD COLUMN {col_name} {pg_ddl}"))
+            else:
+                sync_conn.execute(text(f"ALTER TABLE habits ADD COLUMN IF NOT EXISTS {col_name} {ddl}"))
+        except Exception:
+            # Best-effort; column likely already exists.
+            pass
+
+
 async def init_db() -> None:
     from app import models  # noqa: F401  register models
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(_backfill_habit_columns_sync)

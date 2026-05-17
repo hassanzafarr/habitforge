@@ -35,15 +35,19 @@ registerRoute(
   async ({ request }) => fetch(request)
 );
 
+interface HabitPushPayload {
+  title?: string;
+  body?: string;
+  url?: string;
+  icon?: string;
+  badge?: string;
+  tag?: string;
+  habitId?: number;
+  streakRisk?: boolean;
+}
+
 self.addEventListener("push", (event: PushEvent) => {
-  let payload: {
-    title?: string;
-    body?: string;
-    url?: string;
-    icon?: string;
-    badge?: string;
-    tag?: string;
-  } = {};
+  let payload: HabitPushPayload = {};
 
   try {
     payload = event.data?.json() ?? {};
@@ -52,23 +56,59 @@ self.addEventListener("push", (event: PushEvent) => {
   }
 
   const title = payload.title ?? "HabitForge reminder";
-  const options: NotificationOptions = {
+  const hasHabit = typeof payload.habitId === "number";
+  const options: NotificationOptions & { actions?: { action: string; title: string }[] } = {
     body: payload.body ?? "You have habits waiting today.",
     icon: payload.icon ?? "/logos/mainlogo.png",
     badge: payload.badge ?? "/logos/mainlogo.png",
     tag: payload.tag ?? "habitforge-reminder",
-    data: { url: payload.url ?? "/" },
+    requireInteraction: payload.streakRisk === true,
+    data: {
+      url: payload.url ?? "/",
+      habitId: payload.habitId ?? null,
+    },
   };
+  if (hasHabit) {
+    options.actions = [
+      { action: "done", title: "✓ Done" },
+      { action: "snooze", title: "Snooze 30m" },
+    ];
+  }
 
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
+async function relayActionToClient(
+  habitId: number,
+  action: "done" | "snooze"
+): Promise<boolean> {
+  const clientList = await self.clients.matchAll({
+    type: "window",
+    includeUncontrolled: true,
+  });
+  if (clientList.length === 0) return false;
+  for (const client of clientList) {
+    client.postMessage({ type: "habit-push-action", habitId, action });
+  }
+  return true;
+}
+
 self.addEventListener("notificationclick", (event: NotificationEvent) => {
   event.notification.close();
-  const targetUrl = String(event.notification.data?.url ?? "/");
+  const data = event.notification.data ?? {};
+  const targetUrl = String(data.url ?? "/");
+  const habitId = typeof data.habitId === "number" ? (data.habitId as number) : null;
+  const action = event.action;
 
   event.waitUntil(
     (async () => {
+      // Action button: try to relay to an open client.
+      if (habitId !== null && (action === "done" || action === "snooze")) {
+        const relayed = await relayActionToClient(habitId, action);
+        if (relayed) return;
+        // No open client — open the app so user can complete manually.
+      }
+
       const clientList = await self.clients.matchAll({
         type: "window",
         includeUncontrolled: true,
@@ -77,6 +117,9 @@ self.addEventListener("notificationclick", (event: NotificationEvent) => {
       for (const client of clientList) {
         if ("focus" in client) {
           client.navigate(targetUrl);
+          if (habitId !== null && (action === "done" || action === "snooze")) {
+            client.postMessage({ type: "habit-push-action", habitId, action });
+          }
           return client.focus();
         }
       }
