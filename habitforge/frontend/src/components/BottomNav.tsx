@@ -67,7 +67,9 @@ export function BottomNav({ onNewHabit, onNewTodo, onNewNote }: Props) {
 
   const handleAction = (fn: () => void) => {
     setOpen(false);
-    fn();
+    // Defer modal mount until after speed-dial exit animation, so heavy
+    // form/editor render does not stall the close transition.
+    setTimeout(fn, 220);
   };
 
   return (
@@ -90,43 +92,39 @@ export function BottomNav({ onNewHabit, onNewTodo, onNewNote }: Props) {
       <AnimatePresence>
         {open && (
           <motion.div
-            className="md:hidden fixed left-1/2 -translate-x-1/2 bottom-24 z-40 flex flex-col items-center gap-3"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 12 }}
-            transition={{ duration: 0.18 }}
+            className="md:hidden fixed left-1/2 bottom-24 z-40 flex flex-col items-end gap-2.5"
+            style={{ x: "-50%", willChange: "transform" }}
+            initial="closed"
+            animate="open"
+            exit="closed"
+            variants={{
+              open: { transition: { staggerChildren: 0.035, delayChildren: 0.02 } },
+              closed: { transition: { staggerChildren: 0.025, staggerDirection: -1 } },
+            }}
             role="menu"
             aria-label="Quick create"
           >
-            {actions.map((a, i) => (
+            {actions.map((a) => (
               <motion.button
                 key={a.id}
                 id={a.id}
                 role="menuitem"
                 onClick={() => handleAction(a.onClick)}
-                initial={{ opacity: 0, y: 10, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.9 }}
-                transition={{ delay: (actions.length - 1 - i) * 0.04 }}
-                className="flex items-center gap-2 pr-4 pl-3 py-2 rounded-full text-white shadow-lg active:scale-95 transition-transform"
-                style={{}}
+                variants={{
+                  open: { opacity: 1, y: 0, scale: 1 },
+                  closed: { opacity: 0, y: 8, scale: 0.96 },
+                }}
+                transition={{ type: "tween", duration: 0.16, ease: "easeOut" }}
+                style={{ willChange: "transform, opacity" }}
+                className={cn(
+                  "flex items-center gap-2 pl-2 pr-4 py-1.5 rounded-full text-white shadow-lg active:scale-95",
+                  a.color
+                )}
               >
-                <span
-                  className={cn(
-                    "flex h-9 w-9 items-center justify-center rounded-full shadow-md",
-                    a.color
-                  )}
-                >
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15">
                   {a.icon}
                 </span>
-                <span
-                  className={cn(
-                    "text-sm font-semibold px-3 py-1.5 rounded-full text-white shadow-md",
-                    a.color
-                  )}
-                >
-                  New {a.label}
-                </span>
+                <span className="text-sm font-semibold">New {a.label}</span>
               </motion.button>
             ))}
           </motion.div>

@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   KeyboardEvent,
@@ -164,7 +165,10 @@ export function NoteEditor({ note, onClose }: Props) {
     markDirty();
   }
 
-  const previewHtml = marked.parse(content) as string;
+  const previewHtml = useMemo(
+    () => (showPreview ? (marked.parse(content) as string) : ""),
+    [showPreview, content]
+  );
 
   return (
     <div
