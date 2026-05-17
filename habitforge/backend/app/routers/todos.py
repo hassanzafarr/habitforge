@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session
@@ -59,6 +59,22 @@ async def create_todo(
     await session.commit()
     await session.refresh(todo)
     return TodoRead.model_validate(todo)
+
+
+@router.delete("", status_code=status.HTTP_200_OK)
+async def clear_todos(
+    session: Session,
+    user_id: CurrentUser,
+    scope: str = Query(default="completed", pattern="^(completed|active|all)$"),
+) -> dict[str, int]:
+    stmt = delete(Todo).where(Todo.user_id == user_id)
+    if scope == "completed":
+        stmt = stmt.where(Todo.completed.is_(True))
+    elif scope == "active":
+        stmt = stmt.where(Todo.completed.is_(False))
+    res = await session.execute(stmt)
+    await session.commit()
+    return {"deleted": res.rowcount or 0}
 
 
 @router.patch("/{todo_id}", response_model=TodoRead)

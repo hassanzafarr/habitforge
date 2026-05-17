@@ -14,6 +14,7 @@ import {
   Loader2,
   Plus,
   Sparkles,
+  Trash2,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -69,6 +70,26 @@ export function TodosPage() {
       toast.error("Failed to generate todos. Check your HuggingFace API key.");
     } finally {
       setGenerating(false);
+    }
+  }
+
+  const [clearing, setClearing] = useState(false);
+
+  async function handleClear() {
+    const scope: "completed" | "active" | "all" =
+      filter === "done" ? "completed" : filter === "active" ? "active" : "all";
+    const label =
+      scope === "all" ? "ALL todos" : scope === "active" ? "active todos" : "completed todos";
+    if (!window.confirm(`Delete ${label}? This cannot be undone.`)) return;
+    setClearing(true);
+    try {
+      const res = await api.clearTodos(scope);
+      await qc.invalidateQueries({ queryKey: qk.todos() });
+      toast.success(`Cleared ${res.deleted} todo${res.deleted === 1 ? "" : "s"}`);
+    } catch {
+      toast.error("Failed to clear todos.");
+    } finally {
+      setClearing(false);
     }
   }
 
@@ -167,22 +188,36 @@ export function TodosPage() {
       {showForm && <TodoForm onClose={() => setShowForm(false)} />}
 
       {/* Filters */}
-      <div className="flex items-center gap-1 rounded-xl bg-neutral-100 dark:bg-neutral-800/60 p-1">
-        {FILTERS.map((f) => (
+      <div className="flex items-center gap-2">
+        <div className="flex flex-1 items-center gap-1 rounded-xl bg-neutral-100 dark:bg-neutral-800/60 p-1">
+          {FILTERS.map((f) => (
+            <button
+              key={f.value}
+              id={`todo-filter-${f.value}`}
+              onClick={() => setFilter(f.value)}
+              className={cn(
+                "flex-1 py-1.5 rounded-lg text-sm font-medium transition-all",
+                filter === f.value
+                  ? "bg-white dark:bg-neutral-700 text-ink dark:text-white shadow-sm"
+                  : "text-muted hover:text-ink dark:hover:text-white"
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        {totalCount > 0 && (
           <button
-            key={f.value}
-            id={`todo-filter-${f.value}`}
-            onClick={() => setFilter(f.value)}
-            className={cn(
-              "flex-1 py-1.5 rounded-lg text-sm font-medium transition-all",
-              filter === f.value
-                ? "bg-white dark:bg-neutral-700 text-ink dark:text-white shadow-sm"
-                : "text-muted hover:text-ink dark:hover:text-white"
-            )}
+            id="todos-clear-btn"
+            onClick={handleClear}
+            disabled={clearing}
+            title={filter === "active" ? "Clear all todos" : "Clear completed todos"}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200/60 dark:border-red-900/40 transition-colors disabled:opacity-40"
           >
-            {f.label}
+            {clearing ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+            Clear
           </button>
-        ))}
+        )}
       </div>
 
       {/* List */}

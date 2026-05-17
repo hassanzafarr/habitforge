@@ -91,6 +91,8 @@ export const api = {
     req<Todo>(`/todos/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   deleteTodo: (id: number) =>
     req<void>(`/todos/${id}`, { method: "DELETE" }),
+  clearTodos: (scope: "completed" | "active" | "all" = "completed") =>
+    req<{ deleted: number }>(`/todos?scope=${scope}`, { method: "DELETE" }),
   generateTodos: (prompt: string) =>
     req<GeneratedTodo[]>("/ai/generate-todos", {
       method: "POST",

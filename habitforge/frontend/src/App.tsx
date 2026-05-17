@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import { Show, ClerkLoading, ClerkLoaded } from "@clerk/react";
 import { Navbar } from "@/components/Navbar";
 import { BottomNav } from "@/components/BottomNav";
+import { Modal } from "@/components/ui/Modal";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { HabitsPage } from "@/pages/HabitsPage";
 import { HabitDetailPage } from "@/pages/HabitDetailPage";
@@ -12,11 +13,16 @@ import { LandingPage } from "@/pages/LandingPage";
 import { useKeyboardShortcuts } from "@/lib/useKeyboardShortcuts";
 import { usePushActionBridge } from "@/lib/usePushActionBridge";
 import { HabitForm } from "@/features/habits/HabitForm";
+import { TodoForm } from "@/features/todos/TodoForm";
+import { NoteEditor } from "@/features/notes/NoteEditor";
+import { ListTodo } from "lucide-react";
 
 export default function App() {
   useKeyboardShortcuts();
   usePushActionBridge();
-  const [showCreate, setShowCreate] = useState(false);
+  const [showCreateHabit, setShowCreateHabit] = useState(false);
+  const [showCreateTodo, setShowCreateTodo] = useState(false);
+  const [showCreateNote, setShowCreateNote] = useState(false);
 
   return (
     <div className="min-h-full flex flex-col bg-bg dark:bg-neutral-950">
@@ -43,8 +49,27 @@ export default function App() {
         </ClerkLoaded>
       </main>
       <Show when="signed-in">
-        <BottomNav onNewHabit={() => setShowCreate(true)} />
-        <HabitForm open={showCreate} onClose={() => setShowCreate(false)} />
+        <BottomNav
+          onNewHabit={() => setShowCreateHabit(true)}
+          onNewTodo={() => setShowCreateTodo(true)}
+          onNewNote={() => setShowCreateNote(true)}
+        />
+        <HabitForm open={showCreateHabit} onClose={() => setShowCreateHabit(false)} />
+        <Modal
+          open={showCreateTodo}
+          onClose={() => setShowCreateTodo(false)}
+          title={
+            <span className="flex items-center gap-2">
+              <ListTodo size={16} className="text-emerald-500" />
+              New To-Do
+            </span>
+          }
+        >
+          <TodoForm onClose={() => setShowCreateTodo(false)} />
+        </Modal>
+        {showCreateNote && (
+          <NoteEditor note={null} onClose={() => setShowCreateNote(false)} />
+        )}
       </Show>
     </div>
   );
