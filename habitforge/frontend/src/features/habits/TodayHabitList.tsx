@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { api, qk } from "@/lib/api";
 import type { Habit } from "@/lib/types";
-import { todayIso } from "@/lib/utils";
+import { todayIso, haptic } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 // ── Check circle ──────────────────────────────────────────────────────────────
@@ -198,6 +198,7 @@ export function TodayHabitList() {
 
   function toggleHabit(habit: Habit) {
     if (isHabitDone(habit)) {
+      haptic("light");
       // optimistic remove
       setLocalDoneOverrides((prev) => {
         const m = new Map(prev);
@@ -206,6 +207,7 @@ export function TodayHabitList() {
       });
       deleteMut.mutate(habit.id);
     } else {
+      haptic("success");
       // optimistic add
       setLocalDoneOverrides((prev) => {
         const m = new Map(prev);

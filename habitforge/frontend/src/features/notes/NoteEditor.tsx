@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { X, Bold, Italic, List, Hash, Eye, EyeOff, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api, qk } from "@/lib/api";
+import { useBackDismiss } from "@/lib/useBackDismiss";
 import type { Note, NoteCreate } from "@/lib/types";
 
 marked.setOptions({ breaks: true, gfm: true });
@@ -37,6 +38,7 @@ interface Props {
 export function NoteEditor({ note, onClose }: Props) {
   const qc = useQueryClient();
   const isEdit = !!note;
+  useBackDismiss(true, onClose);
 
   const [title, setTitle] = useState(note?.title ?? "");
   const [content, setContent] = useState(note?.content ?? "");

@@ -6,6 +6,7 @@ import type { GeneratedTodo } from "@/lib/types";
 import { TodoForm } from "@/features/todos/TodoForm";
 import { TodoList } from "@/features/todos/TodoList";
 import { Modal } from "@/components/ui/Modal";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import { Textarea } from "@/components/ui/Input";
 import {
   CheckCircle2,
@@ -109,6 +110,7 @@ export function TodosPage() {
   }
 
   return (
+    <PullToRefresh onRefresh={() => qc.invalidateQueries({ queryKey: qk.todos() })}>
     <div className="mx-auto max-w-2xl px-4 py-8 space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between">
@@ -196,7 +198,7 @@ export function TodosPage() {
               id={`todo-filter-${f.value}`}
               onClick={() => setFilter(f.value)}
               className={cn(
-                "flex-1 py-1.5 rounded-lg text-sm font-medium transition-all",
+                "flex-1 min-h-[40px] py-2 rounded-lg text-sm font-medium transition-all",
                 filter === f.value
                   ? "bg-white dark:bg-neutral-700 text-ink dark:text-white shadow-sm"
                   : "text-muted hover:text-ink dark:hover:text-white"
@@ -237,6 +239,7 @@ export function TodosPage() {
       {/* AI Prompt Modal */}
       <Modal
         open={showAiModal}
+        backDismissible={!generating}
         onClose={() => {
           if (generating) return;
           setShowAiModal(false);
@@ -282,6 +285,7 @@ export function TodosPage() {
       {/* AI Results Modal */}
       <Modal
         open={showResultsModal}
+        backDismissible={!saving}
         onClose={() => {
           if (saving) return;
           setShowResultsModal(false);
@@ -341,5 +345,6 @@ export function TodosPage() {
         </div>
       </Modal>
     </div>
+    </PullToRefresh>
   );
 }

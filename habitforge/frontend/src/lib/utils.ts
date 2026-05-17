@@ -45,3 +45,20 @@ export function intensityColor(base: string, ratio: number): string {
 
 export const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 export const WEEKDAYS_SHORT = ["M", "T", "W", "T", "F", "S", "S"];
+
+// Haptic feedback helper — silent no-op on unsupported devices (desktop, iOS Safari).
+export function haptic(pattern: "light" | "medium" | "heavy" | "success" | "error" = "light") {
+  if (typeof navigator === "undefined" || !navigator.vibrate) return;
+  const patterns: Record<string, number | number[]> = {
+    light: 10,
+    medium: 20,
+    heavy: 35,
+    success: [10, 40, 10],
+    error: [30, 50, 30],
+  };
+  try {
+    navigator.vibrate(patterns[pattern]);
+  } catch {
+    /* ignore */
+  }
+}

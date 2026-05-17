@@ -1,14 +1,18 @@
 import { useEffect, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useBackDismiss } from "@/lib/useBackDismiss";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   title?: ReactNode;
   children: ReactNode;
+  backDismissible?: boolean;
 }
 
-export function Modal({ open, onClose, title, children }: Props) {
+export function Modal({ open, onClose, title, children, backDismissible = true }: Props) {
+  useBackDismiss(open, onClose, { canDismiss: backDismissible });
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();

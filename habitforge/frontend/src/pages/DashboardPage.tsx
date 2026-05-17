@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
 import { format } from "date-fns";
+import { useQueryClient } from "@tanstack/react-query";
 import { StatCards } from "@/features/dashboard/StatCards";
 import { TrendChart } from "@/features/dashboard/TrendChart";
 import { TodayHabitList } from "@/features/habits/TodayHabitList";
@@ -8,10 +9,14 @@ import { Heatmap } from "@/features/heatmap/Heatmap";
 import { HabitForm } from "@/features/habits/HabitForm";
 import { PushNotificationsCard } from "@/features/push/PushNotificationsCard";
 import { Button } from "@/components/ui/Button";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import { SHORTCUT_EVENTS } from "@/lib/useKeyboardShortcuts";
 
 export function DashboardPage() {
+  const qc = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
+
+  const handleRefresh = () => qc.invalidateQueries();
 
   // Listen for N shortcut from anywhere
   useEffect(() => {
@@ -23,6 +28,7 @@ export function DashboardPage() {
   const today = format(new Date(), "EEEE, MMMM d");
 
   return (
+    <PullToRefresh onRefresh={handleRefresh}>
     <div className="mx-auto max-w-6xl px-4 py-6 md:py-8 space-y-6 md:space-y-8">
       {/* Header row */}
       <div className="flex items-start justify-between gap-4">
@@ -72,5 +78,6 @@ export function DashboardPage() {
       {/* Create habit modal */}
       <HabitForm open={showCreate} onClose={() => setShowCreate(false)} />
     </div>
+    </PullToRefresh>
   );
 }

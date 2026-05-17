@@ -1,9 +1,9 @@
 /**
  * TodoList — renders todo items with toggle, edit, and delete capabilities.
  */
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { api, qk } from "@/lib/api";
 import type { Todo, TodoPriority } from "@/lib/types";
 import { TodoForm } from "./TodoForm";
@@ -15,9 +15,10 @@ import {
   Flag,
   CalendarDays,
   ClipboardList,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, haptic } from "@/lib/utils";
 import { format, isPast, isToday, parseISO } from "date-fns";
 
 const PRIORITY_STYLES: Record<TodoPriority, { bar: string; badge: string; text: string }> = {
@@ -104,6 +105,10 @@ function TodoItem({ todo }: ItemProps) {
   }
 
   return (
+    <SwipeableTodoCard
+      onComplete={() => { haptic(todo.completed ? "light" : "success"); toggleMut.mutate(); }}
+      onDelete={() => { haptic("error"); deleteMut.mutate(); }}
+    >
     <motion.div
       layout
       initial={{ opacity: 0, y: 8 }}
@@ -122,16 +127,17 @@ function TodoItem({ todo }: ItemProps) {
       {/* Checkbox */}
       <button
         id={`todo-toggle-${todo.id}`}
-        onClick={() => toggleMut.mutate()}
+        onClick={() => { haptic(todo.completed ? "light" : "success"); toggleMut.mutate(); }}
         aria-label={todo.completed ? "Mark incomplete" : "Mark complete"}
         className={cn(
-          "mt-0.5 shrink-0 transition-all",
+          "shrink-0 flex items-center justify-center -m-2 p-2 rounded-full transition-all touch-manipulation",
           todo.completed
             ? "text-indigo-500 dark:text-indigo-400"
             : "text-neutral-300 dark:text-neutral-600 hover:text-indigo-500 dark:hover:text-indigo-400"
         )}
+        style={{ minWidth: 44, minHeight: 44 }}
       >
-        {todo.completed ? <CheckCircle2 size={22} /> : <Circle size={22} />}
+        {todo.completed ? <CheckCircle2 size={24} /> : <Circle size={24} />}
       </button>
 
       {/* Content */}
@@ -168,26 +174,104 @@ function TodoItem({ todo }: ItemProps) {
         </div>
       </div>
 
-      {/* Actions — visible on hover */}
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Actions — always visible on touch, on hover for desktop */}
+      <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
         <button
           id={`todo-edit-${todo.id}`}
           onClick={() => setEditing(true)}
-          className="p-1.5 rounded-md text-muted hover:text-ink dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          className="flex items-center justify-center w-11 h-11 md:w-8 md:h-8 rounded-lg text-muted hover:text-ink dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
           aria-label="Edit todo"
         >
-          <Pencil size={14} />
+          <Pencil size={16} />
         </button>
         <button
           id={`todo-delete-${todo.id}`}
-          onClick={() => deleteMut.mutate()}
-          className="p-1.5 rounded-md text-muted hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+          onClick={() => { haptic("medium"); deleteMut.mutate(); }}
+          className="flex items-center justify-center w-11 h-11 md:w-8 md:h-8 rounded-lg text-muted hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
           aria-label="Delete todo"
         >
-          <Trash2 size={14} />
+          <Trash2 size={16} />
         </button>
       </div>
     </motion.div>
+    </SwipeableTodoCard>
+  );
+}
+
+interface SwipeableProps {
+  onComplete: () => void;
+  onDelete: () => void;
+  children: React.ReactNode;
+}
+
+// Touch-only swipe wrapper: drag right past threshold = complete, left = delete.
+// Disabled on fine-pointer (desktop) — falls through to native.
+function SwipeableTodoCard({ onComplete, onDelete, children }: SwipeableProps) {
+  const x = useMotionValue(0);
+  const triggeredRight = useRef(false);
+  const triggeredLeft = useRef(false);
+  const THRESHOLD = 80;
+
+  const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+
+  // Background opacity proxies for action reveals
+  const rightOpacity = useTransform(x, [0, THRESHOLD], [0, 1]);
+  const leftOpacity = useTransform(x, [-THRESHOLD, 0], [1, 0]);
+
+  if (!isTouch) {
+    return <>{children}</>;
+  }
+
+  return (
+    <div className="relative">
+      {/* Complete (right swipe) */}
+      <motion.div
+        style={{ opacity: rightOpacity }}
+        className="absolute inset-0 rounded-2xl bg-emerald-500 flex items-center justify-start pl-6"
+        aria-hidden
+      >
+        <Check size={22} className="text-white" />
+      </motion.div>
+      {/* Delete (left swipe) */}
+      <motion.div
+        style={{ opacity: leftOpacity }}
+        className="absolute inset-0 rounded-2xl bg-red-500 flex items-center justify-end pr-6"
+        aria-hidden
+      >
+        <Trash2 size={22} className="text-white" />
+      </motion.div>
+
+      <motion.div
+        drag="x"
+        dragConstraints={{ left: -150, right: 150 }}
+        dragElastic={0.15}
+        style={{ x, touchAction: "pan-y" }}
+        onDrag={(_e, info) => {
+          if (info.offset.x > THRESHOLD && !triggeredRight.current) {
+            triggeredRight.current = true;
+            haptic("light");
+          } else if (info.offset.x < -THRESHOLD && !triggeredLeft.current) {
+            triggeredLeft.current = true;
+            haptic("light");
+          } else if (Math.abs(info.offset.x) < THRESHOLD) {
+            triggeredRight.current = false;
+            triggeredLeft.current = false;
+          }
+        }}
+        onDragEnd={(_e, info) => {
+          if (info.offset.x > THRESHOLD) {
+            onComplete();
+          } else if (info.offset.x < -THRESHOLD) {
+            onDelete();
+          }
+          x.set(0);
+          triggeredRight.current = false;
+          triggeredLeft.current = false;
+        }}
+      >
+        {children}
+      </motion.div>
+    </div>
   );
 }
 

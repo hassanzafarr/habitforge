@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { AnimatePresence, motion } from "framer-motion";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence } from "framer-motion";
 import { NotebookPen, Plus, Search, SortAsc, SortDesc, Pin, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api, qk } from "@/lib/api";
@@ -8,6 +8,7 @@ import type { Note } from "@/lib/types";
 import { NoteCard } from "@/features/notes/NoteCard";
 import { NoteEditor } from "@/features/notes/NoteEditor";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { PullToRefresh } from "@/components/PullToRefresh";
 
 type SortKey = "updated" | "created" | "title";
 
@@ -26,6 +27,7 @@ function NotesSkeleton() {
 }
 
 export function NotesPage() {
+  const qc = useQueryClient();
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [search, setSearch] = useState("");
@@ -114,6 +116,7 @@ export function NotesPage() {
   }
 
   return (
+    <PullToRefresh onRefresh={() => qc.invalidateQueries({ queryKey: qk.notes() })}>
     <div className="mx-auto max-w-6xl px-4 py-6 space-y-6">
       {/* Page header */}
       <div className="flex items-center justify-between">
@@ -274,16 +277,6 @@ export function NotesPage() {
         </div>
       )}
 
-      {/* FAB for mobile */}
-      <motion.button
-        onClick={openNew}
-        whileTap={{ scale: 0.93 }}
-        className="md:hidden fixed bottom-20 right-4 z-30 flex items-center justify-center w-14 h-14 rounded-full bg-indigo-600 text-white shadow-lg shadow-indigo-500/40"
-        aria-label="New note"
-      >
-        <Plus size={24} strokeWidth={2.5} />
-      </motion.button>
-
       {/* Editor */}
       <AnimatePresence>
         {editorOpen && (
@@ -295,5 +288,6 @@ export function NotesPage() {
         )}
       </AnimatePresence>
     </div>
+    </PullToRefresh>
   );
 }

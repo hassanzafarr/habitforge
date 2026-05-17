@@ -27,7 +27,7 @@ export default function App() {
   return (
     <div className="min-h-full flex flex-col bg-bg dark:bg-neutral-950">
       <Navbar />
-      <main className="flex-1 pb-16 md:pb-0 flex flex-col">
+      <main className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0 flex flex-col">
         <ClerkLoading>
           <div className="flex flex-1 items-center justify-center text-sm text-muted">
             Loading…

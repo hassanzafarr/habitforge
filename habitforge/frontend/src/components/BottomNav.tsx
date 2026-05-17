@@ -14,7 +14,8 @@ import {
   X,
   ListTodo,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, haptic } from "@/lib/utils";
+import { useBackDismiss } from "@/lib/useBackDismiss";
 
 interface Props {
   onNewHabit: () => void;
@@ -32,6 +33,7 @@ interface DialAction {
 
 export function BottomNav({ onNewHabit, onNewTodo, onNewNote }: Props) {
   const [open, setOpen] = useState(false);
+  useBackDismiss(open, () => setOpen(false));
 
   // Close on Escape
   useEffect(() => {
@@ -66,6 +68,7 @@ export function BottomNav({ onNewHabit, onNewTodo, onNewNote }: Props) {
   ];
 
   const handleAction = (fn: () => void) => {
+    haptic("light");
     setOpen(false);
     // Defer modal mount until after speed-dial exit animation, so heavy
     // form/editor render does not stall the close transition.
@@ -133,6 +136,7 @@ export function BottomNav({ onNewHabit, onNewTodo, onNewNote }: Props) {
 
       <nav
         className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-white/95 backdrop-blur-md dark:bg-neutral-950/95 dark:border-neutral-800"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         aria-label="Mobile navigation"
       >
         <div className="flex items-center justify-around h-16 px-2 max-w-lg mx-auto">
@@ -174,7 +178,7 @@ export function BottomNav({ onNewHabit, onNewTodo, onNewNote }: Props) {
           {/* Speed-dial FAB */}
           <button
             id="mobile-nav-fab"
-            onClick={() => setOpen((v) => !v)}
+            onClick={() => { haptic("medium"); setOpen((v) => !v); }}
             aria-label={open ? "Close quick create menu" : "Open quick create menu"}
             aria-expanded={open}
             aria-haspopup="menu"

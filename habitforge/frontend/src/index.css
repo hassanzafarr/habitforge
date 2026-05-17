@@ -56,3 +56,56 @@ body {
 kbd {
   font-family: "Inter", ui-monospace, monospace;
 }
+
+/* iOS Safari zooms on inputs <16px. Force 16px on mobile to prevent zoom. */
+@media (max-width: 767px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="time"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* Mobile tap targets — ensure interactive elements clear 44px Apple HIG minimum.
+   Scoped to coarse pointers so desktop hover UIs stay compact.
+   `min-h-touch` opt-in class is preferred; this is a safety net for in-flow buttons. */
+@media (pointer: coarse) {
+  button,
+  a[role="button"],
+  [role="menuitem"],
+  input[type="checkbox"],
+  input[type="radio"] {
+    touch-action: manipulation;
+  }
+  /* Larger hit-slop on small icon buttons via padding fallback */
+  .hit-44 {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Disable iOS tap highlight (looks bad on custom buttons) */
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
