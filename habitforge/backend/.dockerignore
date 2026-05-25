@@ -1,0 +1,12 @@
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.db
+.env
+.env.*
+.pytest_cache
+.coverage
+tests/
+*.toml
+railway.toml

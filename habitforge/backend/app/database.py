@@ -25,6 +25,9 @@ elif DATABASE_URL.startswith("postgresql://"):
 elif DATABASE_URL.startswith("postgresql+psycopg2://"):
     DATABASE_URL = DATABASE_URL.replace("postgresql+psycopg2://", "postgresql+asyncpg://", 1)
 
+# asyncpg uses `ssl=require` not `sslmode=require` (Neon.tech uses the latter)
+DATABASE_URL = DATABASE_URL.replace("sslmode=require", "ssl=require")
+
 
 engine = create_async_engine(DATABASE_URL, echo=False, future=True)
 SessionLocal = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
