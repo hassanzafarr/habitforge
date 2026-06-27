@@ -29,7 +29,21 @@ elif DATABASE_URL.startswith("postgresql+psycopg2://"):
 DATABASE_URL = DATABASE_URL.replace("sslmode=require", "ssl=require")
 
 
-engine = create_async_engine(DATABASE_URL, echo=False, future=True)
+_IS_POSTGRES = DATABASE_URL.startswith("postgresql")
+
+_engine_kwargs: dict = dict(echo=False, future=True)
+if _IS_POSTGRES:
+    # Supabase/Neon scale-to-zero: drop dead connections before use and recycle
+    # idle ones so the app survives provider cold starts / idle pauses.
+    _engine_kwargs.update(
+        pool_pre_ping=True,
+        pool_recycle=300,
+        pool_size=5,
+        max_overflow=5,
+        connect_args={"timeout": 10},
+    )
+
+engine = create_async_engine(DATABASE_URL, **_engine_kwargs)
 SessionLocal = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
 

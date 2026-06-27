@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -44,8 +45,20 @@ if sentry_dsn := os.getenv("HABITFORGE_SENTRY_DSN"):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await init_db()
-    log.info("DB initialized")
+    app.state.db_ready = False
+    for attempt in range(1, 4):
+        try:
+            await init_db()
+            app.state.db_ready = True
+            log.info("DB initialized")
+            break
+        except Exception as exc:  # noqa: BLE001 - log and retry transient DB errors
+            log.error("init_db attempt %d/3 failed: %s", attempt, exc)
+            if attempt < 3:
+                await asyncio.sleep(2 ** attempt)
+    if not app.state.db_ready:
+        log.error("DB unavailable at startup; serving in degraded mode")
+
     scheduler = start_reminder_scheduler()
     app.state.scheduler = scheduler
     try:
