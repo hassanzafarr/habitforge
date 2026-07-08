@@ -158,3 +158,8 @@ From `habitforge/`:
 - There are parallel `.js` files in `frontend/src/`; validate whether they are still in use before editing both.
 - Preserve API camelCase shape for frontend compatibility.
 - Avoid changing streak semantics without explicitly updating tests and documenting behavior deltas.
+
+## 13) Active Production URLs
+
+- **Backend API URL:** `https://habitforge-api-36efbafea89b.herokuapp.com/api`
+- **Frontend URL:** `https://habittforge.me` (Vercel custom domain) or `https://habitforge-d62y.vercel.app`
