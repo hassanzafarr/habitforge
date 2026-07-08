@@ -1,67 +1,40 @@
 # HabitForge 🔥
 
-HabitForge is a personal habit-tracking web application designed to help you build streaks, visualize progress, and forge better habits. It features a modern, responsive user interface with real-time streak calculations, haptic feedback, dark mode, and optimistic UI updates.
+HabitForge is a premium, personal habit-tracking web application built to help users build streaks, visualize progress, and manage daily tasks. It features a modern, responsive user interface with advanced streak math, haptic feedback, dark mode, custom interactive SVG heatmaps, and Clerk authentication.
 
-## 🚀 Live Deployments
+## 🚀 Live Demo & API
 
-* **Frontend App:** [https://habittforge.me](https://habittforge.me) (Hosted on Vercel)
-* **Backend API:** [https://habitforge-api-36efbafea89b.herokuapp.com/api](https://habitforge-api-36efbafea89b.herokuapp.com/api) (Hosted on Heroku)
-
----
-
-## ✨ Features
-
-- **Streaks & Grace Periods:** Advanced streak logic. Missing today doesn't break a streak until the day ends (Grace Rule), and scheduled "skipped" days preserve your streak.
-- **Visual Analytics:** Custom SVG interactive heatmap and trend charts to track completion rates over time.
-- **Flexible Scheduling:** Set habits as daily, weekly, or specific weekdays (e.g., Mon, Wed, Fri).
-- **Responsive Layout:** Sleek mobile-first design with smooth Framer Motion transitions and bottom navigation.
-- **PWA Ready:** Installable as a Progressive Web App on mobile and desktop, supporting push notifications.
-- **Keyboard Shortcuts:** Quick action triggers (`N` for new habit, `/` for search, `1-9` to toggle today's habits).
+* **Web Application:** [https://habittforge.me](https://habittforge.me)
+* **Backend API Documentation:** [https://habitforge-api-36efbafea89b.herokuapp.com/api/docs](https://habitforge-api-36efbafea89b.herokuapp.com/api/docs)
 
 ---
 
-## 🛠️ Tech Stack
+## ✨ Features & Architecture
 
-### Frontend
-- **Framework:** React 18 + TypeScript + Vite
-- **Styling:** Tailwind CSS v3
-- **State Management:** TanStack Query (React Query) v5
-- **Animations:** Framer Motion
-- **Router:** React Router v6
+### 📊 Advanced Streaks & Analytics
+- **Grace Period Rule:** Missing today's due habit doesn't break a streak immediately. The current streak anchors on yesterday, allowing users to complete the habit before the day ends.
+- **Skipped Day Logic:** Planned absences (e.g., rest days, travel) can be marked as "skipped" to preserve active streaks without artificially inflating completion counts.
+- **Interactive SVG Heatmap:** A custom-built, responsive grid showing 60 days of historical activity, fully accessible with grid roles and ARIA labels.
+- **Trend Charts:** Real-time data visualization of completion rates using Recharts.
 
-### Backend
-- **Framework:** Python 3.11 + FastAPI
-- **Database:** SQLite/Postgres (SQLAlchemy async ORM)
-- **Authentication:** Clerk Auth
-- **AI Streaks:** Integrates with Groq API for habit suggestions
+### 📱 Premium Mobile-First Experience
+- **Optimistic UI Updates:** Check-offs toggle immediately on the UI using TanStack Query, rolling back automatically only if the server returns an error.
+- **Haptic & Visual Feedback:** Polished Framer Motion page transitions, micro-interactions, and integrated haptic gestures.
+- **Progressive Web App (PWA):** Installable on iOS/Android/Desktop, supporting standalone launch mode and push notifications.
+- **Keyboard Shortcuts:** Global hotkeys (`N` for new habit, `/` for search, `1-9` to toggle today's habits) for expert users.
 
 ---
 
-## 💻 Local Development
+## 🛠️ Technology Stack
 
-Run the entire application locally with a single command from the project root:
+### Frontend Client
+* **Framework:** React 18 (TypeScript) + Vite
+* **State & Sync:** TanStack Query (React Query) v5 (optimistic updates, caching, invalidation)
+* **Styling:** Tailwind CSS v3 (custom theme configuration, dark mode support)
+* **Components:** Custom premium primitives built with Radix and Framer Motion
 
-```bash
-# Run both backend and frontend concurrently
-./dev.ps1
-```
-
-Or run them individually:
-
-### Backend Setup
-```bash
-cd habitforge/backend
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -e .
-python seed.py             # Seed sample habit data
-uvicorn app.main:app --reload --port 8000
-```
-
-### Frontend Setup
-```bash
-cd habitforge/frontend
-npm install
-npm run dev
-```
-Open [http://localhost:5174](http://localhost:5174) in your browser.
+### Backend Services
+* **Framework:** FastAPI (Python 3.11)
+* **DB & ORM:** PostgreSQL/SQLite + SQLAlchemy 2.0 (asyncio + asyncpg/aiosqlite)
+* **Security:** Clerk JWT authentication & validation (authorized party validation)
+* **Integration:** Custom integration with the Groq API for AI-assisted habit suggestions and streak analysis.
