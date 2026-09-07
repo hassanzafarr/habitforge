@@ -11,7 +11,13 @@ async function openNewHabit(page: Page) {
   if (await desktopButton.isVisible().catch(() => false)) {
     await desktopButton.click();
   } else {
-    await page.locator("#mobile-nav-new-habit").click();
+    const mobileFab = page.locator("#mobile-nav-fab");
+    if (await mobileFab.isVisible().catch(() => false)) {
+      await mobileFab.click();
+      await page.locator("#speed-dial-habit").click();
+    } else {
+      await page.locator("#mobile-nav-new-habit").click();
+    }
   }
 }
 

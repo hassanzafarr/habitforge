@@ -133,6 +133,7 @@ export function NotesPage() {
         </div>
         <button
           onClick={openNew}
+          aria-label="New Note"
           className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors shadow-sm"
         >
           <Plus size={16} strokeWidth={2.5} />
