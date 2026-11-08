@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 from collections.abc import AsyncIterator
 
@@ -9,6 +10,8 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import DeclarativeBase
+
+log = logging.getLogger("habitforge")
 
 DATABASE_URL = os.getenv("HABITFORGE_DB_URL", "sqlite+aiosqlite:///./habitforge.db")
 
@@ -57,7 +60,9 @@ async def get_session() -> AsyncIterator[AsyncSession]:
 
 
 _HABIT_BACKFILL_COLUMNS: list[tuple[str, str]] = [
-    ("reminder_enabled", "BOOLEAN NOT NULL DEFAULT 0"),
+    # FALSE (not 0): Postgres rejects an integer default on a BOOLEAN column.
+    # SQLite >= 3.23 accepts FALSE too.
+    ("reminder_enabled", "BOOLEAN NOT NULL DEFAULT FALSE"),
     ("reminder_deadline", "VARCHAR(5)"),
     ("reminder_timezone", "VARCHAR(64) NOT NULL DEFAULT 'UTC'"),
     ("reminder_max_per_day", "INTEGER NOT NULL DEFAULT 2"),
@@ -66,30 +71,30 @@ _HABIT_BACKFILL_COLUMNS: list[tuple[str, str]] = [
 
 
 def _backfill_habit_columns_sync(sync_conn) -> None:
-    """Add new reminder columns to existing `habits` table if missing.
+    """Add new reminder columns to an existing `habits` table if missing.
 
-    Idempotent. Works on SQLite + Postgres (try/except on ALTER).
+    `create_all` never alters existing tables, so databases created before the
+    reminder feature need these columns added. Idempotent on SQLite + Postgres.
     """
-    from sqlalchemy import text
+    from sqlalchemy import inspect, text
 
-    is_sqlite = sync_conn.dialect.name == "sqlite"
+    existing = {col["name"] for col in inspect(sync_conn).get_columns("habits")}
+    is_postgres = sync_conn.dialect.name == "postgresql"
     for col_name, ddl in _HABIT_BACKFILL_COLUMNS:
+        if col_name in existing:
+            continue
+        stmt = text(f"ALTER TABLE habits ADD COLUMN {col_name} {ddl}")
         try:
-            # Postgres supports IF NOT EXISTS on ADD COLUMN; SQLite needs probe.
-            if is_sqlite:
-                rows = sync_conn.execute(text("PRAGMA table_info(habits)")).fetchall()
-                cols = {r[1] for r in rows}
-                if col_name in cols:
-                    continue
-                # SQLite cannot ALTER with NOT NULL + no default in older versions;
-                # our defaults above are literal so this works.
-                pg_ddl = ddl
-                sync_conn.execute(text(f"ALTER TABLE habits ADD COLUMN {col_name} {pg_ddl}"))
+            if is_postgres:
+                # A failed statement aborts the whole Postgres transaction, which
+                # would silently roll back create_all too. Isolate each ALTER.
+                with sync_conn.begin_nested():
+                    sync_conn.execute(stmt)
             else:
-                sync_conn.execute(text(f"ALTER TABLE habits ADD COLUMN IF NOT EXISTS {col_name} {ddl}"))
+                sync_conn.execute(stmt)
+            log.info("Added missing column habits.%s", col_name)
         except Exception:
-            # Best-effort; column likely already exists.
-            pass
+            log.exception("Failed to add column habits.%s", col_name)
 
 
 async def init_db() -> None:
